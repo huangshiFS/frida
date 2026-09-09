@@ -1,0 +1,2965 @@
+diff --git a/inject/frida-inject.xcent b/inject/frida-inject.xcent
+index ecbeb720..185d89bb 100644
+--- a/inject/frida-inject.xcent
++++ b/inject/frida-inject.xcent
+@@ -7,7 +7,7 @@
+ 	<key>adi-client</key>
+ 	<string>166430402</string>
+ 	<key>application-identifier</key>
+-	<string>re.frida.Server</string>
++	<string>re.xda.Server</string>
+ 	<key>aps-connection-initiate</key>
+ 	<true/>
+ 	<key>auth-key-vault-client</key>
+diff --git a/inject/inject.vala b/inject/inject.vala
+index f38e13b5..7b5b3f4f 100644
+--- a/inject/inject.vala
++++ b/inject/inject.vala
+@@ -522,7 +522,7 @@ namespace Frida.Inject {
+ 				} else {
+ 					source = script_source;
+ 
+-					options.name = "frida";
++					options.name = "xdagent";
+ 				}
+ 
+ 				options.runtime = script_runtime;
+diff --git a/inject/meson.build b/inject/meson.build
+index 713c731c..e16bdf0f 100644
+--- a/inject/meson.build
++++ b/inject/meson.build
+@@ -18,7 +18,7 @@ raw_inject = executable('frida-inject-raw', inject_sources,
+ custom_target('frida-inject',
+   input: [raw_inject, 'frida-inject.xcent'],
+   output: 'frida-inject' + exe_suffix,
+-  command: post_process + ['executable', 're.frida.Inject', '@INPUT1@'],
++  command: post_process + ['executable', 're.xda.Inject', '@INPUT1@'],
+   install: true,
+   install_dir: get_option('bindir'),
+ )
+diff --git a/lib/agent/agent-glue.c b/lib/agent/agent-glue.c
+index d354fe09..9245d6bf 100644
+--- a/lib/agent/agent-glue.c
++++ b/lib/agent/agent-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-agent.h"
++#include "xda-core.h"
+ 
+ #include "frida-base.h"
+ #include "frida-payload.h"
+diff --git a/lib/agent/agent.vala b/lib/agent/agent.vala
+index f99f31f5..d8855d21 100644
+--- a/lib/agent/agent.vala
++++ b/lib/agent/agent.vala
+@@ -1,4 +1,5 @@
+ namespace Frida.Agent {
++	[CCode (cname = "xda_core_main")]
+ 	public void main (string agent_parameters, ref Frida.UnloadPolicy unload_policy, void * injector_state) {
+ 		if (Runner.shared_instance == null)
+ 			Runner.create_and_run (agent_parameters, ref unload_policy, injector_state);
+@@ -363,7 +364,7 @@ namespace Frida.Agent {
+ 		}
+ 
+ 		private void keep_running_eternalized () {
+-			agent_gthread = new Thread<bool> ("frida-eternal-agent", () => {
++			agent_gthread = new Thread<bool> ("xda-eternal-agent", () => {
+ 				var ignore_scope = new ThreadIgnoreScope (FRIDA_THREAD);
+ 
+ 				agent_tid = Gum.Process.get_current_thread_id ();
+@@ -559,7 +560,7 @@ namespace Frida.Agent {
+ 					assert_not_reached ();
+ 				}
+ 			} else {
+-				agent_gthread = new Thread<bool> ("frida-eternal-agent", () => {
++				agent_gthread = new Thread<bool> ("xda-eternal-agent", () => {
+ 					var ignore_scope = new ThreadIgnoreScope (FRIDA_THREAD);
+ 					run_after_transition ();
+ 					ignore_scope = null;
+@@ -667,7 +668,7 @@ namespace Frida.Agent {
+ 					assert_not_reached ();
+ 				}
+ 			} else {
+-				agent_gthread = new Thread<bool> ("frida-eternal-agent", () => {
++				agent_gthread = new Thread<bool> ("xda-eternal-agent", () => {
+ 					var ignore_scope = new ThreadIgnoreScope (FRIDA_THREAD);
+ 					run_after_transition ();
+ 					ignore_scope = null;
+@@ -1429,7 +1430,7 @@ namespace Frida.Agent {
+ 
+ 				emulated_bridge_state = new BridgeState (parameters.str);
+ 
+-				emulated_worker = new Thread<void> ("frida-agent-emulated", run_emulated_agent);
++				emulated_worker = new Thread<void> ("xda-core-emulated", run_emulated_agent);
+ 
+ 				var connection = yield new DBusConnection (stream, ServerGuid.HOST_SESSION_SERVICE,
+ 					AUTHENTICATION_SERVER | AUTHENTICATION_ALLOW_ANONYMOUS, null, cancellable);
+diff --git a/lib/agent/frida-agent-x86.symbols b/lib/agent/frida-agent-x86.symbols
+deleted file mode 100644
+index 253690b1..00000000
+--- a/lib/agent/frida-agent-x86.symbols
++++ /dev/null
+@@ -1 +0,0 @@
+-_frida_agent_main
+diff --git a/lib/agent/frida-agent.def b/lib/agent/frida-agent.def
+deleted file mode 100644
+index 7634e3fd..00000000
+--- a/lib/agent/frida-agent.def
++++ /dev/null
+@@ -1,2 +0,0 @@
+-EXPORTS
+-	frida_agent_main
+diff --git a/lib/agent/frida-agent.symbols b/lib/agent/frida-agent.symbols
+deleted file mode 100644
+index 53d1914a..00000000
+--- a/lib/agent/frida-agent.symbols
++++ /dev/null
+@@ -1 +0,0 @@
+-frida_agent_main
+diff --git a/lib/agent/meson.build b/lib/agent/meson.build
+index 77f63d51..20a00dd1 100644
+--- a/lib/agent/meson.build
++++ b/lib/agent/meson.build
+@@ -31,19 +31,19 @@ if build_agent
+ 
+   if host_os_family == 'windows'
+     if host_toolchain != 'microsoft'
+-      symfile = (host_arch == 'x86') ? 'frida-agent-x86.symbols' : 'frida-agent.symbols'
++      symfile = (host_arch == 'x86') ? 'xda-core-x86.symbols' : 'xda-core.symbols'
+       extra_link_args += '-Wl,--retain-symbols-file,' + meson.current_source_dir() / symfile
+       extra_link_depends += symfile
+     endif
+   elif host_os_family == 'darwin'
+-    extra_link_args += '-Wl,-exported_symbol,_frida_agent_main'
++    extra_link_args += '-Wl,-exported_symbol,_xda_core_main'
+   else
+     if libc == 'glibc'
+-      symscript = 'frida-agent-glibc.version'
++      symscript = 'xda-core-glibc.version'
+     elif host_os == 'android'
+-      symscript = 'frida-agent-android.version'
++      symscript = 'xda-core-android.version'
+     else
+-      symscript = 'frida-agent.version'
++      symscript = 'xda-core.version'
+     endif
+     extra_link_args += '-Wl,--version-script,' + meson.current_source_dir() / symscript
+     extra_link_depends += symscript
+@@ -54,14 +54,14 @@ if build_agent
+     extra_link_args += '-Wl,-Bsymbolic'
+   endif
+ 
+-  raw_agent = shared_library('frida-agent-raw', agent_sources,
++  raw_agent = shared_library('xda-core-raw', agent_sources,
+     name_prefix: 'lib',
+     c_args: frida_component_cflags,
+-    vala_header: 'frida-agent.h',
++    vala_header: 'xda-core.h',
+     vala_args: [base_vala_args, payload_vala_args, extra_vala_args],
+     link_args: extra_link_args,
+     link_depends: extra_link_depends,
+-    vs_module_defs: 'frida-agent.def',
++    vs_module_defs: 'xda-core.def',
+     override_options: ['b_asneeded=true'],
+     dependencies: [gio_dep, gee_dep, gum_dep, gumjs_dep, base_dep, pipe_dep, tls_provider_dep, payload_dep],
+   )
+@@ -70,9 +70,9 @@ if build_agent
+   if host_os_family != 'darwin'
+     operations += ['--move', 'destructor', 'frida_libc_shim_deinit', 'first']
+   endif
+-  modulated_agent = custom_target('frida-agent-modulated',
++  modulated_agent = custom_target('xda-core-modulated',
+     input: raw_agent,
+-    output: 'libfrida-agent-modulated' + shlib_suffix,
++    output: 'libxda-core-modulated' + shlib_suffix,
+     command: modulate + operations,
+   )
+ 
+@@ -81,7 +81,7 @@ if build_agent
+   else
+     identity = agent_name
+   endif
+-  agent = custom_target('frida-agent',
++  agent = custom_target('xda-core',
+     input: modulated_agent,
+     output: need_universal_agent ? f'@agent_name@-@host_abi@' : agent_name,
+     command: post_process + ['shared-library', identity],
+@@ -95,7 +95,7 @@ endif
+ 
+ if need_universal_agent
+   if build_agent
+-    custom_target('frida-agent-universal',
++    custom_target('xda-core-universal',
+       input: agent,
+       output: agent_name,
+       command: [
+@@ -110,7 +110,7 @@ if need_universal_agent
+       install_dir: asset_dir,
+     )
+   else
+-    custom_target('frida-agent-universal',
++    custom_target('xda-core-universal',
+       output: agent_name,
+       command: [
+         lipo,
+diff --git a/lib/agent/frida-agent-android.version b/lib/agent/xda-core-android.version
+similarity index 68%
+rename from lib/agent/frida-agent-android.version
+rename to lib/agent/xda-core-android.version
+index c273bd0c..5ee67970 100644
+--- a/lib/agent/frida-agent-android.version
++++ b/lib/agent/xda-core-android.version
+@@ -1,6 +1,6 @@
+ {
+   global:
+-    frida_agent_main;
++    xda_core_main;
+     JNI_OnLoad;
+ 
+   local:
+diff --git a/lib/agent/frida-agent-glibc.version b/lib/agent/xda-core-glibc.version
+similarity index 84%
+rename from lib/agent/frida-agent-glibc.version
+rename to lib/agent/xda-core-glibc.version
+index abbbc38b..95324c44 100644
+--- a/lib/agent/frida-agent-glibc.version
++++ b/lib/agent/xda-core-glibc.version
+@@ -1,6 +1,6 @@
+ FRIDA_1.0 {
+   global:
+-    frida_agent_main;
++    xda_core_main;
+ 
+   local:
+     *;
+diff --git a/lib/agent/xda-core-x86.symbols b/lib/agent/xda-core-x86.symbols
+new file mode 100644
+index 00000000..d3d189a8
+--- /dev/null
++++ b/lib/agent/xda-core-x86.symbols
+@@ -0,0 +1 @@
++_xda_core_main
+diff --git a/lib/agent/xda-core.def b/lib/agent/xda-core.def
+new file mode 100644
+index 00000000..54175a2b
+--- /dev/null
++++ b/lib/agent/xda-core.def
+@@ -0,0 +1,2 @@
++EXPORTS
++	xda_core_main
+diff --git a/lib/agent/xda-core.symbols b/lib/agent/xda-core.symbols
+new file mode 100644
+index 00000000..c44014cc
+--- /dev/null
++++ b/lib/agent/xda-core.symbols
+@@ -0,0 +1 @@
++xda_core_main
+diff --git a/lib/agent/frida-agent.version b/lib/agent/xda-core.version
+similarity index 59%
+rename from lib/agent/frida-agent.version
+rename to lib/agent/xda-core.version
+index d9571f63..afbef3ea 100644
+--- a/lib/agent/frida-agent.version
++++ b/lib/agent/xda-core.version
+@@ -1,6 +1,6 @@
+ {
+   global:
+-    frida_agent_main;
++    xda_core_main;
+ 
+   local:
+     *;
+diff --git a/lib/base/session.vala b/lib/base/session.vala
+index 21402d22..6d55761c 100644
+--- a/lib/base/session.vala
++++ b/lib/base/session.vala
+@@ -1,5 +1,5 @@
+ namespace Frida {
+-	[DBus (name = "re.frida.HostSession17")]
++	[DBus (name = "re.xda.HostSession17")]
+ 	public interface HostSession : Object {
+ 		public abstract async void ping (uint interval_seconds, Cancellable? cancellable) throws GLib.Error;
+ 
+@@ -46,7 +46,7 @@ namespace Frida {
+ 		public signal void uninjected (InjectorPayloadId id);
+ 	}
+ 
+-	[DBus (name = "re.frida.AgentSessionProvider17")]
++	[DBus (name = "re.xda.AgentSessionProvider17")]
+ 	public interface AgentSessionProvider : Object {
+ 		public abstract async void open (AgentSessionId id, HashTable<string, Variant> options,
+ 			Cancellable? cancellable) throws GLib.Error;
+@@ -61,7 +61,7 @@ namespace Frida {
+ 		public signal void child_gating_changed (uint subscriber_count);
+ 	}
+ 
+-	[DBus (name = "re.frida.AgentSession17")]
++	[DBus (name = "re.xda.AgentSession17")]
+ 	public interface AgentSession : Object {
+ 		public abstract async void close (Cancellable? cancellable) throws GLib.Error;
+ 
+@@ -105,7 +105,7 @@ namespace Frida {
+ 		public signal void candidate_gathering_done ();
+ 	}
+ 
+-	[DBus (name = "re.frida.AgentController17")]
++	[DBus (name = "re.xda.AgentController17")]
+ 	public interface AgentController : Object {
+ #if !WINDOWS
+ 		public abstract async HostChildId prepare_to_fork (uint parent_pid, Cancellable? cancellable, out uint parent_injectee_id,
+@@ -126,7 +126,7 @@ namespace Frida {
+ 			Cancellable? cancellable) throws GLib.Error;
+ 	}
+ 
+-	[DBus (name = "re.frida.AgentMessageSink17")]
++	[DBus (name = "re.xda.AgentMessageSink17")]
+ 	public interface AgentMessageSink : Object {
+ 		public abstract async void post_messages (AgentMessage[] messages, uint batch_id,
+ 			Cancellable? cancellable) throws GLib.Error;
+@@ -754,7 +754,7 @@ namespace Frida {
+ 		}
+ 	}
+ 
+-	[DBus (name = "re.frida.GadgetSession17")]
++	[DBus (name = "re.xda.GadgetSession17")]
+ 	public interface GadgetSession : Object {
+ 		public abstract async void break_and_resume (Cancellable? cancellable) throws GLib.Error;
+ 		public abstract async void break_and_detach (Cancellable? cancellable) throws GLib.Error;
+@@ -782,14 +782,14 @@ namespace Frida {
+ 		PAGE_PLAN,
+ 	}
+ 
+-	[DBus (name = "re.frida.Channel17")]
++	[DBus (name = "re.xda.Channel17")]
+ 	public interface Channel : Object {
+ 		public abstract async void close (Cancellable? cancellable) throws GLib.Error;
+ 		public abstract async void input (uint8[] data, Cancellable? cancellable) throws GLib.Error;
+ 		public signal void output (uint8[] data);
+ 	}
+ 
+-	[DBus (name = "re.frida.ServiceSession17")]
++	[DBus (name = "re.xda.ServiceSession17")]
+ 	public interface ServiceSession : Object {
+ 		public signal void close ();
+ 		public signal void message (Variant message);
+@@ -799,13 +799,13 @@ namespace Frida {
+ 		public abstract async Variant request (Variant parameters, Cancellable? cancellable) throws GLib.Error;
+ 	}
+ 
+-	[DBus (name = "re.frida.TransportBroker17")]
++	[DBus (name = "re.xda.TransportBroker17")]
+ 	public interface TransportBroker : Object {
+ 		public abstract async void open_tcp_transport (AgentSessionId id, Cancellable? cancellable, out uint16 port,
+ 			out string token) throws GLib.Error;
+ 	}
+ 
+-	[DBus (name = "re.frida.PortalSession17")]
++	[DBus (name = "re.xda.PortalSession17")]
+ 	public interface PortalSession : Object {
+ 		public abstract async void join (HostApplicationInfo app, SpawnStartState current_state,
+ 			AgentSessionId[] interrupted_sessions, HashTable<string, Variant> options, Cancellable? cancellable,
+@@ -814,14 +814,14 @@ namespace Frida {
+ 		public signal void kill ();
+ 	}
+ 
+-	[DBus (name = "re.frida.BusSession17")]
++	[DBus (name = "re.xda.BusSession17")]
+ 	public interface BusSession : Object {
+ 		public abstract async void attach (Cancellable? cancellable) throws GLib.Error;
+ 		public abstract async void post (string json, bool has_data, uint8[] data, Cancellable? cancellable) throws GLib.Error;
+ 		public signal void message (string json, bool has_data, uint8[] data);
+ 	}
+ 
+-	[DBus (name = "re.frida.AuthenticationService17")]
++	[DBus (name = "re.xda.AuthenticationService17")]
+ 	/**
+ 	 * Authenticates clients connecting to a {@link PortalService} or
+ 	 * {@link ControlService}.
+@@ -1209,13 +1209,13 @@ namespace Frida {
+ 		}
+ 	}
+ 
+-	[DBus (name = "re.frida.Error")]
++	[DBus (name = "re.xda.Error")]
+ 	/**
+ 	 * The errors that Frida operations can fail with.
+ 	 */
+ 	public errordomain Error {
+ 		/**
+-		 * The frida-server is not running.
++		 * The xda-server is not running.
+ 		 */
+ 		SERVER_NOT_RUNNING,
+ 		/**
+@@ -1290,7 +1290,7 @@ namespace Frida {
+ 			throw (IOError) e;
+ 
+ 		if (e is DBusError.UNKNOWN_METHOD) {
+-			throw new Frida.Error.PROTOCOL ("Unable to communicate with remote frida-server; " +
++			throw new Frida.Error.PROTOCOL ("Unable to communicate with remote xda-server; " +
+ 				"please ensure that major versions match and that the remote Frida has the " +
+ 				"feature you are trying to use");
+ 		}
+@@ -2731,18 +2731,18 @@ namespace Frida {
+ 	}
+ 
+ 	namespace ObjectPath {
+-		public const string HOST_SESSION = "/re/frida/HostSession";
+-		public const string AGENT_SESSION_PROVIDER = "/re/frida/AgentSessionProvider";
+-		public const string AGENT_SESSION = "/re/frida/AgentSession";
+-		public const string AGENT_CONTROLLER = "/re/frida/AgentController";
+-		public const string AGENT_MESSAGE_SINK = "/re/frida/AgentMessageSink";
+-		public const string GADGET_SESSION = "/re/frida/GadgetSession";
+-		public const string CHANNEL = "/re/frida/Channel";
+-		public const string SERVICE = "/re/frida/Service";
+-		public const string TRANSPORT_BROKER = "/re/frida/TransportBroker";
+-		public const string PORTAL_SESSION = "/re/frida/PortalSession";
+-		public const string BUS_SESSION = "/re/frida/BusSession";
+-		public const string AUTHENTICATION_SERVICE = "/re/frida/AuthenticationService";
++		public const string HOST_SESSION = "/re/xda/HostSession";
++		public const string AGENT_SESSION_PROVIDER = "/re/xda/AgentSessionProvider";
++		public const string AGENT_SESSION = "/re/xda/AgentSession";
++		public const string AGENT_CONTROLLER = "/re/xda/AgentController";
++		public const string AGENT_MESSAGE_SINK = "/re/xda/AgentMessageSink";
++		public const string GADGET_SESSION = "/re/xda/GadgetSession";
++		public const string CHANNEL = "/re/xda/Channel";
++		public const string SERVICE = "/re/xda/Service";
++		public const string TRANSPORT_BROKER = "/re/xda/TransportBroker";
++		public const string PORTAL_SESSION = "/re/xda/PortalSession";
++		public const string BUS_SESSION = "/re/xda/BusSession";
++		public const string AUTHENTICATION_SERVICE = "/re/xda/AuthenticationService";
+ 
+ 		public static string for_agent_session (AgentSessionId id) {
+ 			return AGENT_SESSION + "/" + id.handle;
+diff --git a/lib/gadget/frida-gadget.def b/lib/gadget/frida-gadget.def
+deleted file mode 100644
+index bd36e2bf..00000000
+--- a/lib/gadget/frida-gadget.def
++++ /dev/null
+@@ -1,2 +0,0 @@
+-EXPORTS
+-	frida_gadget_wait_for_permission_to_resume
+diff --git a/lib/gadget/gadget-darwin.m b/lib/gadget/gadget-darwin.m
+index 7f419e0a..f8adab5d 100644
+--- a/lib/gadget/gadget-darwin.m
++++ b/lib/gadget/gadget-darwin.m
+@@ -6,7 +6,7 @@
+ # define __WATCHOS_PROHIBITED
+ #endif
+ 
+-#include "frida-gadget.h"
++#include "xda-gadget.h"
+ 
+ #include "frida-base.h"
+ 
+diff --git a/lib/gadget/gadget-glue.c b/lib/gadget/gadget-glue.c
+index bc340c4f..f8b2ca58 100644
+--- a/lib/gadget/gadget-glue.c
++++ b/lib/gadget/gadget-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-gadget.h"
++#include "xda-gadget.h"
+ 
+ #include "frida-base.h"
+ #include "frida-payload.h"
+@@ -112,7 +112,7 @@ frida_gadget_environment_init (void)
+ 
+   worker_context = g_main_context_ref (g_main_context_default ());
+   worker_loop = g_main_loop_new (worker_context, FALSE);
+-  worker_thread = g_thread_new ("frida-gadget", run_worker_loop, NULL);
++  worker_thread = g_thread_new ("xda-gadget", run_worker_loop, NULL);
+ }
+ 
+ void
+diff --git a/lib/gadget/gadget.vala b/lib/gadget/gadget.vala
+index 2ef4c357..90a162d7 100644
+--- a/lib/gadget/gadget.vala
++++ b/lib/gadget/gadget.vala
+@@ -580,7 +580,7 @@ namespace Frida.Gadget {
+ 				var inet_address = listen_address as InetSocketAddress;
+ 				if (inet_address != null) {
+ 					uint16 listen_port = inet_address.get_port ();
+-					Environment.set_thread_name ("frida-gadget-tcp-%u".printf (listen_port));
++					Environment.set_thread_name ("xda-gadget-tcp-%u".printf (listen_port));
+ 					if (request != null) {
+ 						request.set_value (listen_port);
+ 					} else {
+@@ -591,7 +591,7 @@ namespace Frida.Gadget {
+ 				} else {
+ #if !WINDOWS
+ 					var unix_address = (UnixSocketAddress) listen_address;
+-					Environment.set_thread_name ("frida-gadget-unix");
++					Environment.set_thread_name ("xda-gadget-unix");
+ 					if (request != null) {
+ 						request.set_value (0);
+ 					} else {
+@@ -1724,7 +1724,7 @@ namespace Frida.Gadget {
+ 				}
+ 
+ 				uint pid = get_process_id ();
+-				string identifier = "re.frida.Gadget";
++				string identifier = "re.xda.Gadget";
+ 				string name = "Gadget";
+ 				var no_parameters = make_parameters_dict ();
+ 				this_app = HostApplicationInfo (identifier, name, pid, no_parameters);
+diff --git a/lib/gadget/meson.build b/lib/gadget/meson.build
+index 8fb4c6c8..91b841bd 100644
+--- a/lib/gadget/meson.build
++++ b/lib/gadget/meson.build
+@@ -36,16 +36,16 @@ endif
+ 
+ if host_os_family == 'windows'
+   if host_toolchain != 'microsoft'
+-    symfile = 'frida-gadget.symbols'
++    symfile = 'xda-gadget.symbols'
+     extra_link_args += '-Wl,--retain-symbols-file,' + meson.current_source_dir() / symfile
+     extra_link_depends += symfile
+   endif
+ elif host_os_family == 'darwin'
+-  symlist = 'frida-gadget.symbols'
++  symlist = 'xda-gadget.symbols'
+   extra_link_args += '-Wl,-exported_symbols_list,' + meson.current_source_dir() / symlist
+   extra_link_depends += symlist
+ else
+-  symscript = (libc == 'glibc') ? 'frida-gadget-glibc.version' : 'frida-gadget.version'
++  symscript = (libc == 'glibc') ? 'xda-gadget-glibc.version' : 'xda-gadget.version'
+   extra_link_args += '-Wl,--version-script,' + meson.current_source_dir() / symscript
+   extra_link_depends += symscript
+ endif
+@@ -55,15 +55,15 @@ if host_os_family in ['linux', 'qnx']
+   extra_link_args += ['-Wl,-Bsymbolic']
+ endif
+ 
+-raw_gadget = shared_library('frida-gadget-raw', gadget_sources,
++raw_gadget = shared_library('xda-gadget-raw', gadget_sources,
+   name_prefix: 'lib',
+   vala_args: [base_vala_args, payload_vala_args, extra_vala_args],
+-  vala_header: 'frida-gadget.h',
++  vala_header: 'xda-gadget.h',
+   c_args: frida_component_cflags,
+   objc_args: extra_objc_args,
+   link_args: extra_link_args,
+   link_depends: extra_link_depends,
+-  vs_module_defs: 'frida-gadget.def',
++  vs_module_defs: 'xda-gadget.def',
+   override_options: ['b_asneeded=true'],
+   dependencies: [gio_dep, gee_dep, json_glib_dep, gum_dep, gumjs_dep, base_dep, netif_dep, tls_provider_dep, payload_dep] + platform_deps,
+ )
+@@ -78,9 +78,9 @@ if host_os_family != 'darwin'
+     '--move', 'destructor', 'frida_on_unload', 'last',
+   ]
+ endif
+-modulated_gadget = custom_target('frida-gadget-modulated',
++modulated_gadget = custom_target('xda-gadget-modulated',
+   input: raw_gadget,
+-  output: 'libfrida-gadget-modulated' + shlib_suffix,
++  output: 'libxda-gadget-modulated' + shlib_suffix,
+   command: modulate + operations,
+ )
+ 
+@@ -93,7 +93,7 @@ elif host_os in ['ios', 'tvos']
+ else
+   identity = gadget_name
+ endif
+-gadget_for_host_arch = custom_target('frida-gadget',
++gadget_for_host_arch = custom_target('xda-gadget',
+   input: modulated_gadget,
+   output: need_universal_gadget ? f'@gadget_name@-@host_abi@' : gadget_name,
+   command: post_process + ['shared-library', identity],
+@@ -102,7 +102,7 @@ gadget_for_host_arch = custom_target('frida-gadget',
+ )
+ 
+ if need_universal_gadget
+-  gadget = custom_target('frida-gadget-universal',
++  gadget = custom_target('xda-gadget-universal',
+     input: gadget_for_host_arch,
+     output: gadget_name,
+     command: [
+diff --git a/lib/gadget/frida-gadget-glibc.version b/lib/gadget/xda-gadget-glibc.version
+similarity index 100%
+rename from lib/gadget/frida-gadget-glibc.version
+rename to lib/gadget/xda-gadget-glibc.version
+diff --git a/lib/gadget/xda-gadget.def b/lib/gadget/xda-gadget.def
+new file mode 100644
+index 00000000..3f9d179a
+--- /dev/null
++++ b/lib/gadget/xda-gadget.def
+@@ -0,0 +1,2 @@
++EXPORTS
++	xda_gadget_wait_for_permission_to_resume
+diff --git a/lib/gadget/frida-gadget.symbols b/lib/gadget/xda-gadget.symbols
+similarity index 100%
+rename from lib/gadget/frida-gadget.symbols
+rename to lib/gadget/xda-gadget.symbols
+diff --git a/lib/gadget/frida-gadget.version b/lib/gadget/xda-gadget.version
+similarity index 100%
+rename from lib/gadget/frida-gadget.version
+rename to lib/gadget/xda-gadget.version
+diff --git a/lib/netif/tunnel-interface-observer.vala b/lib/netif/tunnel-interface-observer.vala
+index 4325d0ad..439d247e 100644
+--- a/lib/netif/tunnel-interface-observer.vala
++++ b/lib/netif/tunnel-interface-observer.vala
+@@ -4,7 +4,7 @@ public sealed class Frida.TunnelInterfaceObserver : Object, DynamicInterfaceObse
+ 
+ 	private Darwin.SystemConfiguration.DynamicStore? store;
+ 	private Darwin.GCD.DispatchQueue event_queue =
+-		new Darwin.GCD.DispatchQueue ("re.frida.endpoint-enumerator", Darwin.GCD.DispatchQueueAttr.SERIAL);
++		new Darwin.GCD.DispatchQueue ("re.xda.endpoint-enumerator", Darwin.GCD.DispatchQueueAttr.SERIAL);
+ 
+ 	private MainContext? main_context;
+ 
+diff --git a/lib/payload/portal-client.vala b/lib/payload/portal-client.vala
+index 309316b4..7ae7db7f 100644
+--- a/lib/payload/portal-client.vala
++++ b/lib/payload/portal-client.vala
+@@ -275,7 +275,7 @@ namespace Frida {
+ 			var opts = SessionOptions._deserialize (options);
+ 
+ 			if (opts.realm == EMULATED)
+-				throw new Error.NOT_SUPPORTED ("Emulated realm is not supported by frida-gadget");
++				throw new Error.NOT_SUPPORTED ("Emulated realm is not supported by xda-gadget");
+ 
+ 			AgentMessageSink sink;
+ 			try {
+diff --git a/meson.build b/meson.build
+index a7452cfa..73f47ea4 100644
+--- a/meson.build
++++ b/meson.build
+@@ -224,9 +224,9 @@ else
+   shlib_suffix = '.so'
+ endif
+ 
+-helper_name = 'frida-helper' + exe_suffix
+-agent_name = 'frida-agent' + shlib_suffix
+-gadget_name = 'frida-gadget' + shlib_suffix
++helper_name = 'xda-helper' + exe_suffix
++agent_name = 'xda-core' + shlib_suffix
++gadget_name = 'xda-gadget' + shlib_suffix
+ 
+ frida_libdir_name = f'frida-@api_version@'
+ root_asset_dir = get_option('libdir') / frida_libdir_name
+diff --git a/server/meson.build b/server/meson.build
+index 8f24cbe7..2999720f 100644
+--- a/server/meson.build
++++ b/server/meson.build
+@@ -15,16 +15,16 @@ endif
+ extra_link_args = []
+ extra_link_depends = []
+ if host_os_family == 'darwin'
+-  symlist = 'frida-server.symbols'
++  symlist = 'xda-server.symbols'
+   extra_link_args += ['-Wl,-exported_symbols_list,' + meson.current_source_dir() / symlist]
+   extra_link_depends += [symlist]
+ elif host_os_family != 'windows'
+-  symscript = (host_os == 'freebsd') ? 'frida-server-freebsd.version' : 'frida-server.version'
++  symscript = (host_os == 'freebsd') ? 'xda-server-freebsd.version' : 'xda-server.version'
+   extra_link_args += ['-Wl,--version-script,' + meson.current_source_dir() / symscript]
+   extra_link_depends += [symscript]
+ endif
+ if host_os == 'macos'
+-  server_plist = 'frida-server.plist'
++  server_plist = 'xda-server.plist'
+   extra_link_args += ['-Wl,-sectcreate,__TEXT,__info_plist,' + meson.current_source_dir() / server_plist]
+   extra_link_depends += [server_plist]
+ endif
+@@ -34,26 +34,26 @@ if host_os_family == 'darwin'
+   server_deps += dependency('appleframeworks', modules: ['CoreFoundation'])
+ endif
+ 
+-raw_server = executable('frida-server-raw', server_sources,
++raw_server = executable('xda-server-raw', server_sources,
+   vala_args: [core_vala_args, '--pkg=posix'],
+   link_args: extra_link_args,
+   link_depends: extra_link_depends,
+   dependencies: server_deps,
+ )
+ 
+-server_name = 'frida-server' + exe_suffix
++server_name = 'xda-server' + exe_suffix
+ need_universal_server = assets_mode == 'installed' and server_compat != ''
+ 
+-server = custom_target('frida-server',
+-  input: [raw_server, 'frida-server.xcent'],
++server = custom_target('xda-server',
++  input: [raw_server, 'xda-server.xcent'],
+   output: need_universal_server ? f'@server_name@-@host_abi@' : server_name,
+-  command: post_process + ['executable', 're.frida.Server', '@INPUT1@'],
++  command: post_process + ['executable', 're.xda.Server', '@INPUT1@'],
+   install: true,
+   install_dir: get_option('bindir'),
+ )
+ 
+ if need_universal_server
+-  custom_target('frida-server-universal',
++  custom_target('xda-server-universal',
+     input: server,
+     output: server_name,
+     command: [
+diff --git a/server/server.vala b/server/server.vala
+index 0d72d595..c7a1dfa1 100644
+--- a/server/server.vala
++++ b/server/server.vala
+@@ -1,7 +1,7 @@
+ namespace Frida.Server {
+ 	private static Application application;
+ 
+-	private const string DEFAULT_DIRECTORY = "re.frida.server";
++	private const string DEFAULT_DIRECTORY = "re.xda.server";
+ 	private static bool output_version = false;
+ 	private static string? device_id = null;
+ 	private static string? listen_address = null;
+@@ -178,7 +178,7 @@ namespace Frida.Server {
+ 		Environment.configure ();
+ 
+ #if DARWIN
+-		var worker = new Thread<int> ("frida-server-main-loop", () => {
++		var worker = new Thread<int> ("xda-server-main-loop", () => {
+ 			var exit_code = run_application (device_id, endpoint_params, options, on_ready);
+ 
+ 			_stop_run_loop ();
+diff --git a/server/frida-server-freebsd.version b/server/xda-server-freebsd.version
+similarity index 100%
+rename from server/frida-server-freebsd.version
+rename to server/xda-server-freebsd.version
+diff --git a/server/frida-server.plist b/server/xda-server.plist
+similarity index 93%
+rename from server/frida-server.plist
+rename to server/xda-server.plist
+index 1580573b..0cce699d 100644
+--- a/server/frida-server.plist
++++ b/server/xda-server.plist
+@@ -5,7 +5,7 @@
+ 	<key>CFBundleDevelopmentRegion</key>
+ 	<string>English</string>
+ 	<key>CFBundleIdentifier</key>
+-	<string>re.frida.Server</string>
++	<string>re.xda.Server</string>
+ 	<key>CFBundleInfoDictionaryVersion</key>
+ 	<string>6.0</string>
+ 	<key>CFBundleName</key>
+diff --git a/server/frida-server.symbols b/server/xda-server.symbols
+similarity index 100%
+rename from server/frida-server.symbols
+rename to server/xda-server.symbols
+diff --git a/server/frida-server.version b/server/xda-server.version
+similarity index 100%
+rename from server/frida-server.version
+rename to server/xda-server.version
+diff --git a/server/frida-server.xcent b/server/xda-server.xcent
+similarity index 99%
+rename from server/frida-server.xcent
+rename to server/xda-server.xcent
+index 19b54260..9a150f2f 100644
+--- a/server/frida-server.xcent
++++ b/server/xda-server.xcent
+@@ -13,7 +13,7 @@
+ 	<key>adi-client</key>
+ 	<string>166430402</string>
+ 	<key>application-identifier</key>
+-	<string>re.frida.Server</string>
++	<string>re.xda.Server</string>
+ 	<key>aps-connection-initiate</key>
+ 	<true/>
+ 	<key>auth-key-vault-client</key>
+diff --git a/src/agent-container.vala b/src/agent-container.vala
+index eecfa1f6..c665d90f 100644
+--- a/src/agent-container.vala
++++ b/src/agent-container.vala
+@@ -28,7 +28,7 @@ namespace Frida {
+ 			}
+ 
+ 			void * main_func_symbol;
+-			var main_func_found = container.module.symbol ("frida_agent_main", out main_func_symbol);
++			var main_func_found = container.module.symbol ("xda_core_main", out main_func_symbol);
+ 			assert (main_func_found);
+ 			container.main_impl = (AgentMainFunc) main_func_symbol;
+ 
+@@ -103,7 +103,7 @@ namespace Frida {
+ 		}
+ 
+ 		private void start_worker_thread () {
+-			thread = new Thread<bool> ("frida-agent-container", run);
++			thread = new Thread<bool> ("xda-core-container", run);
+ 		}
+ 
+ 		private void stop_worker_thread () {
+diff --git a/src/android-helper/Makefile b/src/android-helper/Makefile
+index 17ebc3e9..6459b2a4 100644
+--- a/src/android-helper/Makefile
++++ b/src/android-helper/Makefile
+@@ -4,14 +4,14 @@ ANDROID_SDK_ROOT ?= $(shell echo ~/Android/Sdk)
+ android_platform := android-$(ANDROID_API_LEVEL)
+ android_jar := $(ANDROID_SDK_ROOT)/platforms/$(android_platform)/android.jar
+ 
+-helper.dex: build/frida-helper.jar
++helper.dex: build/xda-helper.jar
+ 	d8 \
+ 		--classpath $(android_jar) \
+ 		--output build/ \
+ 		$<
+ 	mv build/classes.dex $@
+ 
+-build/frida-helper.jar: re/frida/Helper.java re/frida/HelperBackend.java
++build/xda-helper.jar: re/xda/Helper.java re/xda/HelperBackend.java
+ 	javac \
+ 		-cp .:$(android_jar) \
+ 		-bootclasspath $(android_jar) \
+@@ -21,4 +21,4 @@ build/frida-helper.jar: re/frida/Helper.java re/frida/HelperBackend.java
+ 		-Xlint:unchecked \
+ 		$^ \
+ 		-d build/java/
+-	jar cfe $@ re.frida.Helper -C build/java/ .
++	jar cfe $@ re.xda.Helper -C build/java/ .
+diff --git a/src/android-helper/helper.dex b/src/android-helper/helper.dex
+index 7f753eed65c87a18996d70651dccdb6124fe1300..867f4d8a305055a0752a8e8ba050f2ccd168a070 100644
+GIT binary patch
+delta 14167
+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
+
+delta 13260
+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
+
+diff --git a/src/android-helper/re/frida/Helper.java b/src/android-helper/re/xda/Helper.java
+similarity index 92%
+rename from src/android-helper/re/frida/Helper.java
+rename to src/android-helper/re/xda/Helper.java
+index 37e6fbf9..519c51d5 100644
+--- a/src/android-helper/re/frida/Helper.java
++++ b/src/android-helper/re/xda/Helper.java
+@@ -1,4 +1,4 @@
+-package re.frida;
++package re.xda;
+ 
+ import android.net.LocalServerSocket;
+ import android.net.LocalSocket;
+@@ -19,18 +19,18 @@ import org.json.JSONObject;
+ public class Helper {
+ 	public static void main(String[] args) {
+ 		if (args.length != 1) {
+-			System.err.println("Usage: frida-helper <instance-id>");
++			System.err.println("Usage: xda-helper <instance-id>");
+ 			System.exit(1);
+ 			return;
+ 		}
+ 
+ 		String instanceId = args[0];
+ 
+-		new File("/data/local/tmp/frida-helper-" + instanceId + ".dex").delete();
++		new File("/data/local/tmp/xda-helper-" + instanceId + ".dex").delete();
+ 
+ 		LocalServerSocket socket;
+ 		try {
+-			socket = new LocalServerSocket("/frida-helper-" + instanceId);
++			socket = new LocalServerSocket("/xda-helper-" + instanceId);
+ 		} catch (IOException e) {
+ 			System.err.println(e);
+ 			System.exit(2);
+diff --git a/src/android-helper/re/frida/HelperBackend.java b/src/android-helper/re/xda/HelperBackend.java
+similarity index 99%
+rename from src/android-helper/re/frida/HelperBackend.java
+rename to src/android-helper/re/xda/HelperBackend.java
+index 315fe535..1f64012e 100644
+--- a/src/android-helper/re/frida/HelperBackend.java
++++ b/src/android-helper/re/xda/HelperBackend.java
+@@ -1,4 +1,4 @@
+-package re.frida;
++package re.xda;
+ 
+ import android.app.ActivityManager;
+ import android.app.ActivityManager.RunningAppProcessInfo;
+diff --git a/src/barebone/agent-connection.vala b/src/barebone/agent-connection.vala
+index ac25eb2c..965a8b4d 100644
+--- a/src/barebone/agent-connection.vala
++++ b/src/barebone/agent-connection.vala
+@@ -205,7 +205,7 @@ namespace Frida.Barebone {
+ 			elf.enumerate_symbols (e => {
+ 				if (e.name == "_start")
+ 					start_address = base_va + e.address;
+-				else if (e.name == "frida_agent_left")
++				else if (e.name == "xda_core_left")
+ 					left_flag = base_va + e.address;
+ 				return true;
+ 			});
+diff --git a/src/barebone/agent/linux/Kbuild b/src/barebone/agent/linux/Kbuild
+index 62255f71..d85a1758 100644
+--- a/src/barebone/agent/linux/Kbuild
++++ b/src/barebone/agent/linux/Kbuild
+@@ -1,19 +1,19 @@
+-MODULE_NAME ?= frida-agent
++MODULE_NAME ?= xda-core
+ 
+ obj-m += $(MODULE_NAME).o
+ 
+-# frida-agent-prelinked.o is not built from source here: it is the Rust agent, the
++# xda-core-prelinked.o is not built from source here: it is the Rust agent, the
+ # GumJS devkit and the C library collapsed into a single relocatable object by the prelink
+ # step in Makefile. Copy it in through if_changed rather than kbuild's _shipped rule,
+ # so the .cmd file modpost expects gets written.
+-$(MODULE_NAME)-y := frida-kmod.o frida-agent-prelinked.o
++$(MODULE_NAME)-y := frida-kmod.o xda-core-prelinked.o
+ 
+-targets += frida-agent-prelinked.o
++targets += xda-core-prelinked.o
+ 
+ quiet_cmd_frida_agent_prelinked = COPY    $@
+       cmd_frida_agent_prelinked = cp $< $@
+ 
+-$(obj)/frida-agent-prelinked.o: $(src)/frida-agent-prelinked.o.bin FORCE
++$(obj)/xda-core-prelinked.o: $(src)/xda-core-prelinked.o.bin FORCE
+ 	$(call if_changed,frida_agent_prelinked)
+ 
+ # On x86 objtool validates every object going into a module and generates its ORC
+@@ -22,7 +22,7 @@ $(obj)/frida-agent-prelinked.o: $(src)/frida-agent-prelinked.o.bin FORCE
+ # follow, and the tables would only ever describe frames no kernel stack trace walks
+ # into. Both the blob and the module object it is linked into have to be excused,
+ # since objtool runs over each.
+-OBJECT_FILES_NON_STANDARD_frida-agent-prelinked.o := y
++OBJECT_FILES_NON_STANDARD_xda-core-prelinked.o := y
+ OBJECT_FILES_NON_STANDARD_$(MODULE_NAME).o := y
+ 
+ ccflags-y += $(FRIDA_KMOD_DEFS)
+diff --git a/src/barebone/agent/linux/Makefile b/src/barebone/agent/linux/Makefile
+index 279faa06..c60d4b46 100644
+--- a/src/barebone/agent/linux/Makefile
++++ b/src/barebone/agent/linux/Makefile
+@@ -1,4 +1,4 @@
+-# Builds frida-agent.ko in two steps, because kbuild insists on owning the final
++# Builds xda-core.ko in two steps, because kbuild insists on owning the final
+ # link:
+ #
+ #   1. Collapse the Rust staticlib plus everything it needs — the GumJS devkit and
+@@ -112,7 +112,7 @@ LIBBUILTINS = $(FRIDA_SDK)/lib/libclang_rt.builtins.a
+ # version, and on x86_64 the soft-float ABI is reachable only as an -Xclang feature.
+ AGENT_CC ?= clang
+ 
+-PRELINKED := frida-agent-prelinked.o.bin
++PRELINKED := xda-core-prelinked.o.bin
+ 
+ AGENT_LIB_SOFTFLOAT := $(AGENT_TARGET_DIR)/libfrida-barebone-agent-softfloat.a
+ 
+@@ -139,7 +139,7 @@ endif
+ # follows from what the agent defines, and picolibc moves things between releases.
+ LIBC := $(AGENT_TARGET_DIR)/libc-trimmed.a
+ 
+-ENTRY_POINTS := frida_agent_start frida_agent_stop \
++ENTRY_POINTS := xda_core_start xda_core_stop \
+ 	gum_interceptor_obtain gum_interceptor_begin_transaction \
+ 	gum_interceptor_end_transaction gum_interceptor_replace \
+ 	gum_interceptor_revert
+@@ -158,7 +158,7 @@ all: modules
+ 
+ # A module that dies in its init path is left wedged under its own name until the
+ # next boot, so bring-up wants a fresh one per attempt.
+-MODULE_NAME ?= frida-agent
++MODULE_NAME ?= xda-core
+ 
+ modules: $(PRELINKED)
+ 	$(MAKE) -C $(KDIR) $(if $(KOUT),O=$(KOUT)) M=$(CURDIR) ARCH=$(ARCH) \
+diff --git a/src/barebone/agent/linux/README.md b/src/barebone/agent/linux/README.md
+index 59823091..1a5d298e 100644
+--- a/src/barebone/agent/linux/README.md
++++ b/src/barebone/agent/linux/README.md
+@@ -7,7 +7,7 @@ loaded from the inside as an ordinary kernel module.
+ 
+ |                   | XNU                                              | Linux                                     |
+ |-------------------|--------------------------------------------------|-------------------------------------------|
+-| Delivery          | remote stub injects a freestanding ELF           | `insmod frida-agent.ko`                   |
++| Delivery          | remote stub injects a freestanding ELF           | `insmod xda-core.ko`                   |
+ | Kernel primitives | addresses patched into `.kernel_addrs` by the host | direct calls into `frida-kmod.c`        |
+ | Bootstrap config  | GVariant blob written into guest memory          | module parameters                         |
+ | Transport         | virtio hostlink or vsock                         | `/dev/frida` character device             |
+@@ -140,14 +140,14 @@ The prelink half runs anywhere; the kbuild half needs the x86-64 Linux host abov
+ Cross-building from macOS means running that step in a container holding the kernel
+ tree.
+ 
+-    adb push src/barebone/agent/linux/frida-agent.ko /data/local/tmp/
++    adb push src/barebone/agent/linux/xda-core.ko /data/local/tmp/
+ 
+ ## Loading
+ 
+-    insmod frida-agent.ko
++    insmod xda-core.ko
+ 
+ The module's init path returns as soon as the worker thread is running — watch
+-`dmesg` for `frida: listening on /dev/frida`. `rmmod frida-agent` unwinds in the
++`dmesg` for `frida: listening on /dev/frida`. `rmmod xda-core` unwinds in the
+ reverse order and does not return until the worker is off the module's text.
+ 
+ ## Talking to it
+@@ -166,11 +166,11 @@ the module loads.
+ 
+ ### Reaching it from a host
+ 
+-Serve the Barebone device from a frida-server running on the target, so the `open()`
+-happens next to the device node and the host talks to an ordinary frida-server:
++Serve the Barebone device from a xda-server running on the target, so the `open()`
++happens next to the device node and the host talks to an ordinary xda-server:
+ 
+     FRIDA_BAREBONE_CONFIG=/data/local/tmp/linux-kmod.json \
+-        frida-server --device barebone -l 127.0.0.1:27042
++        xda-server --device barebone -l 127.0.0.1:27042
+ 
+ `etc/linux-kmod.json` is that config. From the host, with `adb forward tcp:27042
+ tcp:27042` in place:
+diff --git a/src/barebone/agent/linux/frida-kmod.c b/src/barebone/agent/linux/frida-kmod.c
+index 34323697..f3681bea 100644
+--- a/src/barebone/agent/linux/frida-kmod.c
++++ b/src/barebone/agent/linux/frida-kmod.c
+@@ -647,7 +647,7 @@ frida_kmod_spawn_thread (FridaThreadEntry entry,
+   ctx->entry = entry;
+   ctx->parameter = parameter;
+ 
+-  task = kthread_run (frida_thread_trampoline, ctx, "frida-agent");
++  task = kthread_run (frida_thread_trampoline, ctx, "xda-core");
+   if (IS_ERR (task))
+     {
+       kfree (ctx);
+diff --git a/src/barebone/agent/macos/.gitignore b/src/barebone/agent/macos/.gitignore
+index 35beff39..5a885070 100644
+--- a/src/barebone/agent/macos/.gitignore
++++ b/src/barebone/agent/macos/.gitignore
+@@ -1,4 +1,4 @@
+-/frida-agent
+-/frida-agent.kext/
++/xda-core
++/xda-core.kext/
+ /frida-kext.o
+ /frida-signing.o
+diff --git a/src/barebone/agent/macos/Info.plist b/src/barebone/agent/macos/Info.plist
+index 201a9a42..c7961561 100644
+--- a/src/barebone/agent/macos/Info.plist
++++ b/src/barebone/agent/macos/Info.plist
+@@ -5,13 +5,13 @@
+ 	<key>CFBundleDevelopmentRegion</key>
+ 	<string>en</string>
+ 	<key>CFBundleExecutable</key>
+-	<string>frida-agent</string>
++	<string>xda-core</string>
+ 	<key>CFBundleIdentifier</key>
+-	<string>re.frida.agent</string>
++	<string>re.xda.agent</string>
+ 	<key>CFBundleInfoDictionaryVersion</key>
+ 	<string>6.0</string>
+ 	<key>CFBundleName</key>
+-	<string>frida-agent</string>
++	<string>xda-core</string>
+ 	<key>CFBundlePackageType</key>
+ 	<string>KEXT</string>
+ 	<key>CFBundleShortVersionString</key>
+diff --git a/src/barebone/agent/macos/Makefile b/src/barebone/agent/macos/Makefile
+index e0419868..4842da4a 100644
+--- a/src/barebone/agent/macos/Makefile
++++ b/src/barebone/agent/macos/Makefile
+@@ -43,8 +43,8 @@ AGENT_CC ?= clang -target $(CLANG_TARGET) -mkernel -nostdlibinc \
+ stamp_version = sed -e 's/@FRIDA_VERSION@/$(FRIDA_VERSION)/' \
+ 	-e 's/@BUNDLE_VERSION@/$(BUNDLE_VERSION)/' Info.plist
+ 
+-BUNDLE := frida-agent.kext
+-BINARY := $(BUNDLE)/Contents/MacOS/frida-agent
++BUNDLE := xda-core.kext
++BINARY := $(BUNDLE)/Contents/MacOS/xda-core
+ 
+ all: $(BUNDLE)
+ 
+@@ -53,12 +53,12 @@ skeleton: frida-kext.o Info.plist
+ 	$(stamp_version) > $(BUNDLE)/Contents/Info.plist
+ 	$(shell xcrun --find ld) -kext -arch $(ARCH) -o $(BINARY) frida-kext.o
+ 
+-$(BUNDLE): frida-agent Info.plist
++$(BUNDLE): xda-core Info.plist
+ 	mkdir -p $(BUNDLE)/Contents/MacOS
+ 	$(stamp_version) > $(BUNDLE)/Contents/Info.plist
+-	cp frida-agent $(BINARY)
++	cp xda-core $(BINARY)
+ 
+-frida-agent: frida-kext.o frida-signing.o agent
++xda-core: frida-kext.o frida-signing.o agent
+ 	$(shell xcrun --find ld) -kext -arch $(ARCH) -o $@ \
+ 		frida-kext.o \
+ 		frida-signing.o \
+@@ -83,6 +83,6 @@ agent:
+ 		--target-dir $(AGENT_TARGET_DIR) $(AGENT_BUILD_STD)
+ 
+ clean:
+-	rm -rf $(BUNDLE) frida-agent frida-kext.o frida-signing.o
++	rm -rf $(BUNDLE) xda-core frida-kext.o frida-signing.o
+ 
+ .PHONY: all agent clean skeleton
+diff --git a/src/barebone/agent/macos/README.md b/src/barebone/agent/macos/README.md
+index c9316849..8901a375 100644
+--- a/src/barebone/agent/macos/README.md
++++ b/src/barebone/agent/macos/README.md
+@@ -29,7 +29,7 @@ Then the kext itself:
+          GUMJS_DEVKIT_DIR=.../frida-gum/build/bindings/gumjs/devkit
+ 
+ which builds the agent as a static library for the kernel's ABI, `frida-kext.c` against the Kernel
+-framework's headers, and links the two with the devkit into `frida-agent.kext`.
++framework's headers, and links the two with the devkit into `xda-core.kext`.
+ 
+ `make skeleton` builds the glue alone, which is enough to check the pipeline without the rest.
+ 
+diff --git a/src/barebone/agent/macos/frida-kext.c b/src/barebone/agent/macos/frida-kext.c
+index 263a5d10..4c8f054f 100644
+--- a/src/barebone/agent/macos/frida-kext.c
++++ b/src/barebone/agent/macos/frida-kext.c
+@@ -213,7 +213,7 @@ frida_kext_stop (kmod_info_t * ki, void * d)
+   return KERN_SUCCESS;
+ }
+ 
+-KMOD_EXPLICIT_DECL (re.frida.agent, "1.0", frida_kext_start, frida_kext_stop)
++KMOD_EXPLICIT_DECL (re.xda.agent, "1.0", frida_kext_start, frida_kext_stop)
+ 
+ static int
+ frida_dev_open (dev_t dev, int flags, int devtype, struct proc * p)
+diff --git a/src/barebone/agent/src/lib.rs b/src/barebone/agent/src/lib.rs
+index 02b36be1..b76c515a 100644
+--- a/src/barebone/agent/src/lib.rs
++++ b/src/barebone/agent/src/lib.rs
+@@ -348,7 +348,7 @@ mod entrypoint_blob {
+                 kernel::release_fault_reporter();
+             }
+ 
+-            (&raw mut frida_agent_left).write_volatile(1);
++            (&raw mut xda_core_left).write_volatile(1);
+ 
+         }
+     }
+@@ -534,7 +534,7 @@ mod entrypoint_xnu_kext {
+     static WORKER_EXITED: AtomicBool = AtomicBool::new(false);
+ 
+     #[unsafe(no_mangle)]
+-    pub extern "C" fn frida_agent_start(own_base: u64, own_size: u64) -> c_int {
++    pub extern "C" fn xda_core_start(own_base: u64, own_size: u64) -> c_int {
+         kernel::log("frida: agent starting\n\0");
+ 
+         unsafe {
+@@ -553,7 +553,7 @@ mod entrypoint_xnu_kext {
+     }
+ 
+     #[unsafe(no_mangle)]
+-    pub extern "C" fn frida_agent_stop() {
++    pub extern "C" fn xda_core_stop() {
+         kernel::log("frida: agent stopping\n\0");
+ 
+         STOP_REQUESTED.store(true, Ordering::Release);
+@@ -571,7 +571,7 @@ mod entrypoint_xnu_kext {
+     }
+ 
+     #[unsafe(no_mangle)]
+-    pub extern "C" fn frida_agent_wake() {
++    pub extern "C" fn xda_core_wake() {
+         let context = LOOP_CONTEXT.load(Ordering::Acquire) as *mut GMainContext;
+         if context.is_null() {
+             return;
+@@ -625,7 +625,7 @@ mod entrypoint_linux {
+     /// own kernel thread: `insmod` runs with the module mutex held, and bringing
+     /// up Gum plus connecting to the host both block.
+     #[unsafe(no_mangle)]
+-    pub extern "C" fn frida_agent_start(own_base: u64, own_size: u64) -> c_int {
++    pub extern "C" fn xda_core_start(own_base: u64, own_size: u64) -> c_int {
+         kernel::log("frida: agent starting\n\0");
+ 
+         unsafe {
+@@ -646,7 +646,7 @@ mod entrypoint_linux {
+     /// Called from the module's exit path, which must not return until the worker
+     /// is off our text — the module's pages go away right after.
+     #[unsafe(no_mangle)]
+-    pub extern "C" fn frida_agent_stop() {
++    pub extern "C" fn xda_core_stop() {
+         kernel::log("frida: agent stopping\n\0");
+ 
+         STOP_REQUESTED.store(true, Ordering::Release);
+@@ -703,9 +703,9 @@ mod entrypoint_linux {
+ }
+ 
+ #[cfg(feature = "linux")]
+-pub use entrypoint_linux::{frida_agent_start, frida_agent_stop};
++pub use entrypoint_linux::{xda_core_start, xda_core_stop};
+ #[cfg(feature = "xnu-kext")]
+-pub use entrypoint_xnu_kext::{frida_agent_start, frida_agent_stop, frida_agent_wake};
++pub use entrypoint_xnu_kext::{xda_core_start, xda_core_stop, xda_core_wake};
+ #[cfg(feature = "blob")]
+ pub use entrypoint_blob::_start;
+ 
+@@ -853,7 +853,7 @@ pub(crate) unsafe fn install_writable_half(seen_by_copy: usize, writable_from_he
+             writable_half_size());
+ 
+         #[cfg(feature = "xnu-kext")]
+-        let (mut entry, end) = (frida_agent_relocs_start, frida_agent_relocs_end);
++        let (mut entry, end) = (xda_core_relocs_start, xda_core_relocs_end);
+         #[cfg(not(feature = "xnu-kext"))]
+         let (mut entry, end) = (&raw const _agent_relocs_start as usize,
+             &raw const _agent_relocs_end as usize);
+@@ -869,8 +869,8 @@ pub(crate) unsafe fn install_writable_half(seen_by_copy: usize, writable_from_he
+ #[cfg(feature = "xnu-kext")]
+ pub(crate) unsafe fn run_constructors() {
+     unsafe {
+-        let mut entry = frida_agent_init_start;
+-        while entry != frida_agent_init_end {
++        let mut entry = xda_core_init_start;
++        while entry != xda_core_init_end {
+             let signed = (entry as *const usize).read() as *const u8;
+             let start: extern "C" fn() =
+                 core::mem::transmute(crate::pac::ptrauth_strip_data(signed));
+@@ -895,7 +895,7 @@ pub(crate) unsafe fn run_constructors() {
+ 
+ #[cfg(feature = "xnu-kext")]
+ pub(crate) fn writable_half_start() -> usize {
+-    unsafe { frida_agent_private_start }
++    unsafe { xda_core_private_start }
+ }
+ 
+ 
+@@ -907,7 +907,7 @@ pub(crate) fn writable_half_start() -> usize {
+ 
+ #[cfg(feature = "xnu-kext")]
+ fn writable_half_size() -> usize {
+-    unsafe { frida_agent_heap_start - writable_half_start() }
++    unsafe { xda_core_heap_start - writable_half_start() }
+ }
+ 
+ #[cfg(all(any(feature = "win9x", feature = "winnt", feature = "linux-injected",
+@@ -943,12 +943,12 @@ unsafe extern "C" {
+ 
+ #[cfg(feature = "xnu-kext")]
+ unsafe extern "C" {
+-    static frida_agent_init_start: usize;
+-    static frida_agent_init_end: usize;
+-    static frida_agent_private_start: usize;
+-    static frida_agent_heap_start: usize;
+-    static frida_agent_relocs_start: usize;
+-    static frida_agent_relocs_end: usize;
++    static xda_core_init_start: usize;
++    static xda_core_init_end: usize;
++    static xda_core_private_start: usize;
++    static xda_core_heap_start: usize;
++    static xda_core_relocs_start: usize;
++    static xda_core_relocs_end: usize;
+ }
+ 
+ // A copy runs at a base of its own, thus the half that placed it there says where. The
+@@ -1075,7 +1075,7 @@ pub(crate) static STOP_REQUESTED: core::sync::atomic::AtomicBool =
+     core::sync::atomic::AtomicBool::new(false);
+ 
+ #[unsafe(no_mangle)]
+-pub static mut frida_agent_left: u32 = 0;
++pub static mut xda_core_left: u32 = 0;
+ 
+ pub(crate) fn stop_requested() -> bool {
+     STOP_REQUESTED.load(Ordering::Acquire)
+diff --git a/src/barebone/agent/src/xnu.rs b/src/barebone/agent/src/xnu.rs
+index 1a220693..67570c1e 100644
+--- a/src/barebone/agent/src/xnu.rs
++++ b/src/barebone/agent/src/xnu.rs
+@@ -722,7 +722,7 @@ fn kernel_free(ptr: *mut u8, size: usize) {
+ 
+ #[cfg(feature = "xnu-kext")]
+ pub fn what_a_proc_callout_is_signed_with() -> usize {
+-    unsafe { frida_agent_disc_proc_callout as usize }
++    unsafe { xda_core_disc_proc_callout as usize }
+ }
+ 
+ #[cfg(not(feature = "xnu-kext"))]
+@@ -732,7 +732,7 @@ pub fn what_a_proc_callout_is_signed_with() -> usize {
+ 
+ #[cfg(feature = "xnu-kext")]
+ fn what_a_thread_entry_is_signed_with() -> usize {
+-    unsafe { frida_agent_disc_thread_continue as usize }
++    unsafe { xda_core_disc_thread_continue as usize }
+ }
+ 
+ #[cfg(not(feature = "xnu-kext"))]
+@@ -747,8 +747,8 @@ fn what_a_handler_is_signed_with() -> usize {
+ 
+ #[cfg(feature = "xnu-kext")]
+ unsafe extern "C" {
+-    static frida_agent_disc_thread_continue: u32;
+-    static frida_agent_disc_proc_callout: u32;
++    static xda_core_disc_thread_continue: u32;
++    static xda_core_disc_proc_callout: u32;
+ }
+ 
+ pub fn kernel_thread_start(continuation: ContinuationFn, thread_parameter: *mut c_void) -> isize {
+diff --git a/src/barebone/qmp-client.vala b/src/barebone/qmp-client.vala
+index c2a55873..5fff8fee 100644
+--- a/src/barebone/qmp-client.vala
++++ b/src/barebone/qmp-client.vala
+@@ -183,7 +183,7 @@ namespace Frida.Barebone {
+ 			event.connect (on_event);
+ 
+ 			yield add_chardev_from_fd (chardev, fd_name, cancellable);
+-			yield add_serial_port (chardev, bus, "re.frida.hostlink", device, 1, cancellable);
++			yield add_serial_port (chardev, bus, "re.xda.hostlink", device, 1, cancellable);
+ 
+ 			return new Hostlink () {
+ 				connection = SocketConnection.factory_create_connection (local_sock),
+diff --git a/src/control-service.vala b/src/control-service.vala
+index b1026811..6f0aad6f 100644
+--- a/src/control-service.vala
++++ b/src/control-service.vala
+@@ -1,6 +1,6 @@
+ namespace Frida {
+ 	/**
+-	 * Hosts a Frida control endpoint that frida-server-style clients can connect
++	 * Hosts a Frida control endpoint that xda-server-style clients can connect
+ 	 * to, exposing the local system over the network.
+ 	 */
+ 	public sealed class ControlService : Object {
+diff --git a/src/darwin/darwin-host-session.vala b/src/darwin/darwin-host-session.vala
+index f25be5f8..1c701a51 100644
+--- a/src/darwin/darwin-host-session.vala
++++ b/src/darwin/darwin-host-session.vala
+@@ -75,7 +75,7 @@ namespace Frida {
+ 			injector.uninjected.connect (on_uninjected);
+ 
+ #if HAVE_EMBEDDED_ASSETS
+-			var blob = Frida.Data.Agent.get_frida_agent_dylib_blob ();
++			var blob = Frida.Data.Agent.get_xda_core_dylib_blob ();
+ 			agent = new AgentResource (blob.name, copy_to_aligned_pages (blob.data), tempdir);
+ #endif
+ 
+@@ -320,7 +320,7 @@ namespace Frida {
+ 		private async uint inject_agent (uint pid, string agent_parameters, Cancellable? cancellable) throws Error, IOError {
+ 			uint id;
+ 
+-			unowned string entrypoint = "frida_agent_main";
++			unowned string entrypoint = "xda_core_main";
+ #if HAVE_EMBEDDED_ASSETS
+ 			id = yield fruitjector.inject_library_resource (pid, agent, entrypoint, agent_parameters, cancellable);
+ #else
+diff --git a/src/darwin/policy-softener-glue.c b/src/darwin/policy-softener-glue.c
+index b1fc23bf..b3acbc58 100644
+--- a/src/darwin/policy-softener-glue.c
++++ b/src/darwin/policy-softener-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ 
+ #if defined (HAVE_IOS) || defined (HAVE_TVOS) || defined (HAVE_XROS)
+ # include "policyd.h"
+diff --git a/src/darwin/policyd.h b/src/darwin/policyd.h
+index b92cad28..84125a37 100644
+--- a/src/darwin/policyd.h
++++ b/src/darwin/policyd.h
+@@ -3,7 +3,7 @@
+ 
+ #include "policyd-client.h"
+ 
+-#define FRIDA_POLICYD_SERVICE_NAME "re.frida.policyd"
++#define FRIDA_POLICYD_SERVICE_NAME "re.xda.policyd"
+ 
+ int frida_policyd_main (void);
+ 
+diff --git a/src/darwin/frida-helper-backend-glue.m b/src/darwin/xda-helper-backend-glue.m
+similarity index 99%
+rename from src/darwin/frida-helper-backend-glue.m
+rename to src/darwin/xda-helper-backend-glue.m
+index 69525bc3..22955e5e 100644
+--- a/src/darwin/frida-helper-backend-glue.m
++++ b/src/darwin/xda-helper-backend-glue.m
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ 
+ #include "frida-tvos.h"
+ 
+@@ -767,7 +767,7 @@ static kern_return_t frida_convert_thread_state (mach_port_t thread, FridaConver
+   FridaDispatchContext * ctx;
+ 
+   ctx = g_slice_new (FridaDispatchContext);
+-  ctx->dispatch_queue = dispatch_queue_create ("re.frida.helper.queue", DISPATCH_QUEUE_SERIAL);
++  ctx->dispatch_queue = dispatch_queue_create ("re.xda.helper.queue", DISPATCH_QUEUE_SERIAL);
+ 
+   self->dispatch_context = ctx;
+ }
+@@ -1896,14 +1896,14 @@ static void frida_darwin_helper_backend_launch_using_lsaw (NSString * identifier
+    * We POSIX_SPAWN_START_SUSPENDED which means that the kernel will create
+    * the task and its main thread, with the main thread's instruction pointer
+    * pointed at __dyld_start. At this point neither dyld nor libc have been
+-   * initialized, so we won't be able to inject frida-agent at this point.
++   * initialized, so we won't be able to inject xda-core at this point.
+    *
+    * So here's what we'll do before we try to inject our dylib:
+    * - Get hold of the main thread to read its instruction pointer, which will
+    *   tell us where dyld is in memory.
+    * - Walk backwards to find dyld's Mach-O header.
+    * - Walk its symbols and find a function that's called at a point where the process is
+-   *   sufficiently initialized to load frida-agent, but still early enough so the app's
++   *   sufficiently initialized to load xda-core, but still early enough so the app's
+    *   initializer(s) didn't get a chance to run.
+    * - For processes using dyld v3's closure support we put a hardware breakpoint inside
+    *   dyld::launchWithClosure() right after setInitialImageList() has been called.
+diff --git a/src/darwin/frida-helper-backend.vala b/src/darwin/xda-helper-backend.vala
+similarity index 100%
+rename from src/darwin/frida-helper-backend.vala
+rename to src/darwin/xda-helper-backend.vala
+diff --git a/src/darwin/frida-helper-null-backend.vala b/src/darwin/xda-helper-null-backend.vala
+similarity index 100%
+rename from src/darwin/frida-helper-null-backend.vala
+rename to src/darwin/xda-helper-null-backend.vala
+diff --git a/src/darwin/frida-helper-process.vala b/src/darwin/xda-helper-process.vala
+similarity index 98%
+rename from src/darwin/frida-helper-process.vala
+rename to src/darwin/xda-helper-process.vala
+index d5685c52..1c35e4f4 100644
+--- a/src/darwin/frida-helper-process.vala
++++ b/src/darwin/xda-helper-process.vala
+@@ -259,7 +259,7 @@ namespace Frida {
+ 		private static void throw_helper_error (GLib.Error e) throws Error, IOError {
+ #if MACOS
+ 			if (e is IOError.CLOSED) {
+-				throw new Error.PERMISSION_DENIED ("Oops, frida-helper appears to have crashed. It may have been killed " +
++				throw new Error.PERMISSION_DENIED ("Oops, xda-helper appears to have crashed. It may have been killed " +
+ 					"by the system while trying to access a hardened process. If this is the case, try setting these " +
+ 					"boot arguments: `sudo nvram boot-args=\"-arm64e_preview_abi thid_should_crash=0 " +
+ 					"tss_should_crash=0\"`. For more information, see: https://github.com/frida/frida-core/issues/524");
+@@ -514,9 +514,9 @@ namespace Frida {
+ #if HAVE_EMBEDDED_ASSETS
+ 			FileUtils.chmod (tempdir.path, 0755);
+ 
+-			var blob = Frida.Data.Helper.get_frida_helper_blob ();
++			var blob = Frida.Data.Helper.get_xda_helper_blob ();
+ 			helper = new TemporaryHelperFile (
+-				new TemporaryFile.from_stream ("frida-helper",
++				new TemporaryFile.from_stream ("xda-helper",
+ 					new MemoryInputStream.from_data (blob.data, null),
+ 					tempdir));
+ 			FileUtils.chmod (helper.path, 0700);
+@@ -573,7 +573,7 @@ namespace Frida {
+ 				if (arm64e_offset == 0 || arm64_offset == 0)
+ 					return false;
+ 
+-				var thin_file = new TemporaryFile.from_stream ("frida-helper-arm64",
++				var thin_file = new TemporaryFile.from_stream ("xda-helper-arm64",
+ 					new MemoryInputStream.from_data (universal_data[arm64_offset:arm64_offset + arm64_size], null),
+ 					tempdir);
+ 				FileUtils.chmod (thin_file.path, 0700);
+diff --git a/src/darwin/frida-helper-service-glue.h b/src/darwin/xda-helper-service-glue.h
+similarity index 100%
+rename from src/darwin/frida-helper-service-glue.h
+rename to src/darwin/xda-helper-service-glue.h
+diff --git a/src/darwin/frida-helper-service-glue.m b/src/darwin/xda-helper-service-glue.m
+similarity index 91%
+rename from src/darwin/frida-helper-service-glue.m
+rename to src/darwin/xda-helper-service-glue.m
+index 9f5491dd..3abd2ab4 100644
+--- a/src/darwin/frida-helper-service-glue.m
++++ b/src/darwin/xda-helper-service-glue.m
+@@ -1,4 +1,4 @@
+-#include "frida-helper-service-glue.h"
++#include "xda-helper-service-glue.h"
+ 
+ #import <Foundation/Foundation.h>
+ 
+diff --git a/src/darwin/frida-helper-service.vala b/src/darwin/xda-helper-service.vala
+similarity index 99%
+rename from src/darwin/frida-helper-service.vala
+rename to src/darwin/xda-helper-service.vala
+index 1ebcfeea..4b814612 100644
+--- a/src/darwin/frida-helper-service.vala
++++ b/src/darwin/xda-helper-service.vala
+@@ -5,7 +5,7 @@ namespace Frida {
+ 		Gum.init ();
+ 
+ 		var parent_address = args[1];
+-		var worker = new Thread<int> ("frida-helper-main-loop", () => {
++		var worker = new Thread<int> ("xda-helper-main-loop", () => {
+ 			var service = new DarwinHelperService (parent_address);
+ 
+ 			var exit_code = service.run ();
+diff --git a/src/darwin/frida-helper-types.vala b/src/darwin/xda-helper-types.vala
+similarity index 97%
+rename from src/darwin/frida-helper-types.vala
+rename to src/darwin/xda-helper-types.vala
+index 1a3c9334..87219bbf 100644
+--- a/src/darwin/frida-helper-types.vala
++++ b/src/darwin/xda-helper-types.vala
+@@ -48,7 +48,7 @@ namespace Frida {
+ 		public abstract async MappedLibraryBlob? try_mmap (Bytes blob, Cancellable? cancellable) throws Error, IOError;
+ 	}
+ 
+-	[DBus (name = "re.frida.Helper")]
++	[DBus (name = "re.xda.Helper")]
+ 	public interface DarwinRemoteHelper : Object {
+ 		public signal void output (uint pid, int fd, uint8[] data);
+ 		public signal void gating_cancelled ();
+@@ -131,7 +131,7 @@ namespace Frida {
+ 	}
+ 
+ 	namespace ObjectPath {
+-		public const string HELPER = "/re/frida/Helper";
+-		public const string SYSTEM_SESSION_PROVIDER = "/re/frida/SystemSessionProvider";
++		public const string HELPER = "/re/xda/Helper";
++		public const string SYSTEM_SESSION_PROVIDER = "/re/xda/SystemSessionProvider";
+ 	}
+ }
+diff --git a/src/darwin/frida-helper.plist b/src/darwin/xda-helper.plist
+similarity index 93%
+rename from src/darwin/frida-helper.plist
+rename to src/darwin/xda-helper.plist
+index 46c64f67..a1068a53 100644
+--- a/src/darwin/frida-helper.plist
++++ b/src/darwin/xda-helper.plist
+@@ -5,7 +5,7 @@
+ 	<key>CFBundleDevelopmentRegion</key>
+ 	<string>English</string>
+ 	<key>CFBundleIdentifier</key>
+-	<string>re.frida.Helper</string>
++	<string>re.xda.Helper</string>
+ 	<key>CFBundleInfoDictionaryVersion</key>
+ 	<string>6.0</string>
+ 	<key>CFBundleName</key>
+diff --git a/src/darwin/frida-helper.symbols b/src/darwin/xda-helper.symbols
+similarity index 100%
+rename from src/darwin/frida-helper.symbols
+rename to src/darwin/xda-helper.symbols
+diff --git a/src/darwin/frida-helper.xcent b/src/darwin/xda-helper.xcent
+similarity index 99%
+rename from src/darwin/frida-helper.xcent
+rename to src/darwin/xda-helper.xcent
+index 01a54e6b..9c91d08c 100644
+--- a/src/darwin/frida-helper.xcent
++++ b/src/darwin/xda-helper.xcent
+@@ -7,7 +7,7 @@
+ 	<key>adi-client</key>
+ 	<string>166430402</string>
+ 	<key>application-identifier</key>
+-	<string>re.frida.Helper</string>
++	<string>re.xda.Helper</string>
+ 	<key>aps-connection-initiate</key>
+ 	<true/>
+ 	<key>auth-key-vault-client</key>
+diff --git a/src/droidy/droidy-host-session.vala b/src/droidy/droidy-host-session.vala
+index bed39400..a4ecb780 100644
+--- a/src/droidy/droidy-host-session.vala
++++ b/src/droidy/droidy-host-session.vala
+@@ -266,7 +266,7 @@ namespace Frida {
+ 		private Cancellable io_cancellable = new Cancellable ();
+ 
+ 		private const double MIN_SERVER_CHECK_INTERVAL = 5.0;
+-		private const string GADGET_APP_ID = "re.frida.Gadget";
++		private const string GADGET_APP_ID = "re.xda.Gadget";
+ 
+ 		public DroidyHostSession (Droidy.DeviceDetails device_details, HostChannelProvider channel_provider,
+ 				string control_endpoint) {
+@@ -446,7 +446,7 @@ namespace Frida {
+ 				if (opts.has_selected_identifiers ()) {
+ 					gadget_is_selected = false;
+ 					opts.enumerate_selected_identifiers (identifier => {
+-						if (identifier == "re.frida.Gadget")
++						if (identifier == "re.xda.Gadget")
+ 							gadget_is_selected = true;
+ 					});
+ 				}
+@@ -577,7 +577,7 @@ namespace Frida {
+ 			if (user_gadget_value != null) {
+ 				if (!user_gadget_value.is_of_type (VariantType.STRING)) {
+ 					throw new Error.INVALID_ARGUMENT ("The 'gadget' option must be a string pointing at the " +
+-						"frida-gadget.so to use");
++						"xda-gadget.so to use");
+ 				}
+ 				user_gadget_path = user_gadget_value.get_string ();
+ 			}
+@@ -884,7 +884,7 @@ namespace Frida {
+ 				}
+ 
+ 				if (connection.closed)
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server");
+ 
+ 				var server = new RemoteServer (session, connection, flavor, transport_broker);
+ 				attach_remote_server (server);
+@@ -905,11 +905,11 @@ namespace Frida {
+ 					last_server_check_error = null;
+ 				} else {
+ 					if (e is Error.SERVER_NOT_RUNNING) {
+-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server");
+ 					} else if (connection != null) {
+-						api_error = new Error.PROTOCOL ("Incompatible frida-server version");
++						api_error = new Error.PROTOCOL ("Incompatible xda-server version");
+ 					} else {
+-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server: %s",
++						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server: %s",
+ 							e.message);
+ 					}
+ 
+@@ -1030,7 +1030,7 @@ namespace Frida {
+ 			try {
+ 				string device_serial = device_details.serial;
+ 				string instance_id = Uuid.string_random ().replace ("-", "");
+-				string helper_path = "/data/local/tmp/frida-helper-" + instance_id + ".dex";
++				string helper_path = "/data/local/tmp/xda-helper-" + instance_id + ".dex";
+ 
+ 				var helper_dex = new MemoryInputStream.from_bytes (
+ 					new Bytes.static (Frida.Data.Android.get_helper_dex_blob ().data));
+@@ -1057,8 +1057,8 @@ namespace Frida {
+ 
+ 					shell.send_command (("CLASSPATH=%s app_process " +
+ 							"/data/local/tmp " +
+-							"--nice-name=re.frida.helper " +
+-							"re.frida.Helper " +
++							"--nice-name=re.xda.helper " +
++							"re.xda.Helper " +
+ 							"%s; " +
+ 							"rm -f %s; " +
+ 							"echo BYE.").printf (helper_path, instance_id, helper_path));
+@@ -1078,7 +1078,7 @@ namespace Frida {
+ 				var client = yield Droidy.Client.open (cancellable);
+ 				try {
+ 					yield client.request ("host:transport:" + device_serial, cancellable);
+-					yield client.request_protocol_change ("localabstract:/frida-helper-" + instance_id, cancellable);
++					yield client.request_protocol_change ("localabstract:/xda-helper-" + instance_id, cancellable);
+ 				} catch (GLib.Error e) {
+ 					client.close.begin ();
+ 					throw e;
+diff --git a/src/droidy/injector.vala b/src/droidy/injector.vala
+index 263f608c..65782503 100644
+--- a/src/droidy/injector.vala
++++ b/src/droidy/injector.vala
+@@ -77,9 +77,9 @@ namespace Frida.Droidy.Injector {
+ 
+ 		private async GadgetDetails inject_gadget (Cancellable? cancellable) throws Error, IOError {
+ 			string instance_id = Uuid.string_random ().replace ("-", "");
+-			string so_path_shared = "/data/local/tmp/frida-gadget-" + instance_id + ".so";
++			string so_path_shared = "/data/local/tmp/xda-gadget-" + instance_id + ".so";
+ 			string so_path_app = "/data/data/" + package + "/gadget.so";
+-			string config_path_shared = "/data/local/tmp/frida-gadget-" + instance_id + ".config";
++			string config_path_shared = "/data/local/tmp/xda-gadget-" + instance_id + ".config";
+ 			string config_path_app = "/data/data/" + package + "/gadget.config";
+ 			string unix_socket_path = "frida:" + package;
+ 
+diff --git a/src/embed-agent.py b/src/embed-agent.py
+index cfb4a594..052e7a02 100644
+--- a/src/embed-agent.py
++++ b/src/embed-agent.py
+@@ -33,7 +33,7 @@ def main(argv):
+             if agent is None:
+                 continue
+             arch = detect_pefile_arch(agent)
+-            embedded_agent = priv_dir / f"frida-agent-{arch}.dll"
++            embedded_agent = priv_dir / f"xda-core-{arch}.dll"
+             embedded_dbghelp = priv_dir / f"dbghelp-{arch}.dll"
+             embedded_symsrv = priv_dir / f"symsrv-{arch}.dll"
+ 
+@@ -52,14 +52,14 @@ def main(argv):
+             embedded_assets += [embedded_agent, embedded_dbghelp, embedded_symsrv]
+             pending_archs.remove(arch)
+         for missing_arch in pending_archs:
+-            embedded_agent = priv_dir / f"frida-agent-{missing_arch}.dll"
++            embedded_agent = priv_dir / f"xda-core-{missing_arch}.dll"
+             embedded_dbghelp = priv_dir / f"dbghelp-{missing_arch}.dll"
+             embedded_symsrv = priv_dir / f"symsrv-{missing_arch}.dll"
+             for asset in {embedded_agent, embedded_dbghelp, embedded_symsrv}:
+                 asset.write_bytes(b"")
+                 embedded_assets += [asset]
+     elif host_os in {"macos", "ios", "watchos", "tvos", "xros"}:
+-        embedded_agent = priv_dir / "frida-agent.dylib"
++        embedded_agent = priv_dir / "xda-core.dylib"
+         if agent_modern is not None and agent_legacy is not None:
+             subprocess.run(lipo + [agent_modern, agent_legacy, "-create", "-output", embedded_agent],
+                            check=True)
+@@ -73,14 +73,14 @@ def main(argv):
+                               (agent_legacy, "32"),
+                               (agent_emulated_modern, "arm64"),
+                               (agent_emulated_legacy, "arm")]:
+-            embedded_agent = priv_dir / f"frida-agent-{flavor}.so"
++            embedded_agent = priv_dir / f"xda-core-{flavor}.so"
+             if agent is not None:
+                 shutil.copy(agent, embedded_agent)
+             else:
+                 embedded_agent.write_bytes(b"")
+             embedded_assets += [embedded_agent]
+     elif host_os in {"freebsd", "qnx"}:
+-        embedded_agent = priv_dir / "frida-agent.so"
++        embedded_agent = priv_dir / "xda-core.so"
+         agent = agent_modern if agent_modern is not None else agent_legacy
+         shutil.copy(agent, embedded_agent)
+         embedded_assets += [embedded_agent]
+diff --git a/src/embed-helper.py b/src/embed-helper.py
+index 35c5c9f7..1f881025 100644
+--- a/src/embed-helper.py
++++ b/src/embed-helper.py
+@@ -28,16 +28,16 @@ def main(argv):
+             if helper is None:
+                 continue
+             arch = detect_pefile_arch(helper)
+-            embedded_helper = priv_dir / f"frida-helper-{arch}.exe"
++            embedded_helper = priv_dir / f"xda-helper-{arch}.exe"
+             shutil.copy(helper, embedded_helper)
+             embedded_assets += [embedded_helper]
+             pending_archs.remove(arch)
+         for missing_arch in pending_archs:
+-            embedded_helper = priv_dir / f"frida-helper-{missing_arch}.exe"
++            embedded_helper = priv_dir / f"xda-helper-{missing_arch}.exe"
+             embedded_helper.write_bytes(b"")
+             embedded_assets += [embedded_helper]
+     elif host_os in {"macos", "ios", "watchos", "tvos", "xros"}:
+-        embedded_helper = priv_dir / "frida-helper"
++        embedded_helper = priv_dir / "xda-helper"
+ 
+         if helper_modern is not None and helper_legacy is not None:
+             subprocess.run(lipo + [helper_modern, helper_legacy, "-create", "-output", embedded_helper],
+@@ -51,8 +51,8 @@ def main(argv):
+ 
+         embedded_assets += [embedded_helper]
+     else:
+-        embedded_helper_modern = priv_dir / f"frida-helper-64"
+-        embedded_helper_legacy = priv_dir / f"frida-helper-32"
++        embedded_helper_modern = priv_dir / f"xda-helper-64"
++        embedded_helper_legacy = priv_dir / f"xda-helper-32"
+ 
+         if helper_modern is not None:
+             shutil.copy(helper_modern, embedded_helper_modern)
+diff --git a/src/freebsd/freebsd-host-session.vala b/src/freebsd/freebsd-host-session.vala
+index bcb96fbb..15bf625d 100644
+--- a/src/freebsd/freebsd-host-session.vala
++++ b/src/freebsd/freebsd-host-session.vala
+@@ -25,7 +25,7 @@ namespace Frida {
+ 			binjector.uninjected.connect (on_uninjected);
+ 			injector = binjector;
+ 
+-			var blob = Frida.Data.Agent.get_frida_agent_so_blob ();
++			var blob = Frida.Data.Agent.get_xda_core_so_blob ();
+ 			agent_desc = new AgentDescriptor (blob.name, new MemoryInputStream.from_data (blob.data, null));
+ 		}
+ 
+@@ -133,7 +133,7 @@ namespace Frida {
+ 
+ 			var stream_request = Pipe.open (t.local_address, cancellable);
+ 
+-			var id = yield binjector.inject_library_resource (pid, agent_desc, "frida_agent_main",
++			var id = yield binjector.inject_library_resource (pid, agent_desc, "xda_core_main",
+ 				make_agent_parameters (pid, t.remote_address, options), cancellable);
+ 			injectee_by_pid[pid] = id;
+ 
+diff --git a/src/frida-glue.c b/src/frida-glue.c
+index 6154034e..c566e505 100644
+--- a/src/frida-glue.c
++++ b/src/frida-glue.c
+@@ -60,7 +60,7 @@ frida_init_with_runtime (FridaRuntime rt)
+     {
+       main_context = g_main_context_ref (g_main_context_default ());
+       main_loop = g_main_loop_new (main_context, FALSE);
+-      main_thread = g_thread_new ("frida-main-loop", run_main_loop, NULL);
++      main_thread = g_thread_new ("xda-main-loop", run_main_loop, NULL);
+     }
+ 
+     g_once_init_leave (&frida_initialized, TRUE);
+diff --git a/src/frida.vala b/src/frida.vala
+index 3e94780a..dcdc36ce 100644
+--- a/src/frida.vala
++++ b/src/frida.vala
+@@ -710,7 +710,7 @@ namespace Frida {
+ 
+ 	/**
+ 	 * Represents a device that Frida can interact with, such as the local
+-	 * system, a USB-connected phone, or a remote frida-server.
++	 * system, a USB-connected phone, or a remote xda-server.
+ 	 *
+ 	 * Obtain one through a {@link DeviceManager}, then use it to spawn or attach
+ 	 * to processes.
+diff --git a/src/fruity/device-monitor-macos.vala b/src/fruity/device-monitor-macos.vala
+index 063af220..fe76a8c6 100644
+--- a/src/fruity/device-monitor-macos.vala
++++ b/src/fruity/device-monitor-macos.vala
+@@ -8,7 +8,7 @@ namespace Frida.Fruity {
+ 
+ 		private XpcClient? pairingd;
+ 		private Darwin.GCD.DispatchQueue queue =
+-			new Darwin.GCD.DispatchQueue ("re.frida.fruity.remotepairing", Darwin.GCD.DispatchQueueAttr.SERIAL);
++			new Darwin.GCD.DispatchQueue ("re.xda.fruity.remotepairing", Darwin.GCD.DispatchQueueAttr.SERIAL);
+ 
+ 		public async void start (Cancellable? cancellable) throws IOError {
+ 			pairingd = XpcClient.make_for_mach_service ("com.apple.CoreDevice.remotepairingd", queue);
+diff --git a/src/fruity/fruity-host-session.vala b/src/fruity/fruity-host-session.vala
+index b9c1876e..8e8fc906 100644
+--- a/src/fruity/fruity-host-session.vala
++++ b/src/fruity/fruity-host-session.vala
+@@ -219,7 +219,7 @@ namespace Frida {
+ 		private Cancellable io_cancellable = new Cancellable ();
+ 
+ 		private const double MIN_SERVER_CHECK_INTERVAL = 5.0;
+-		private const string GADGET_APP_ID = "re.frida.Gadget";
++		private const string GADGET_APP_ID = "re.xda.Gadget";
+ 		private const string DEBUGSERVER_ENDPOINT_17PLUS = "com.apple.internal.dt.remote.debugproxy";
+ 		private const string DEBUGSERVER_ENDPOINT_14PLUS = "com.apple.debugserver.DVTSecureSocketProxy";
+ 		private const string DEBUGSERVER_ENDPOINT_LEGACY = "com.apple.debugserver?tls=handshake-only";
+@@ -852,7 +852,7 @@ namespace Frida {
+ 			if (gadget_value != null) {
+ 				if (!gadget_value.is_of_type (VariantType.STRING)) {
+ 					throw new Error.INVALID_ARGUMENT ("The 'gadget' option must be a string pointing at the " +
+-						"frida-gadget.dylib to use");
++						"xda-gadget.dylib to use");
+ 				}
+ 				gadget_path = gadget_value.get_string ();
+ 			}
+@@ -1345,7 +1345,7 @@ namespace Frida {
+ 				}
+ 
+ 				if (connection.closed)
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server");
+ 
+ 				var server = new RemoteServer (flavor, session, connection, channel, device, transport_broker);
+ 				attach_remote_server (server);
+@@ -1368,9 +1368,9 @@ namespace Frida {
+ 					if (e is Error) {
+ 						api_error = e;
+ 					} else if (connection != null) {
+-						api_error = new Error.PROTOCOL ("Incompatible frida-server version");
++						api_error = new Error.PROTOCOL ("Incompatible xda-server version");
+ 					} else {
+-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server: %s",
++						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server: %s",
+ 							e.message);
+ 					}
+ 
+diff --git a/src/fruity/injector.vala b/src/fruity/injector.vala
+index faf427ba..959047e1 100644
+--- a/src/fruity/injector.vala
++++ b/src/fruity/injector.vala
+@@ -141,7 +141,7 @@ namespace Frida.Fruity.Injector {
+ 					return true;
+ 
+ 				MatchInfo info;
+-				if (/^frida-gadget-tcp-(\d+)$/.match (name, 0, out info)) {
++				if (/^xda-gadget-tcp-(\d+)$/.match (name, 0, out info)) {
+ 					string raw_port = info.fetch (1);
+ 
+ 					try {
+@@ -388,7 +388,7 @@ namespace Frida.Fruity.Injector {
+ 					.add_string_value ("full")
+ 				.end_object ();
+ 			string raw_config = Json.to_string (config.get_root (), false);
+-			string config_param = "frida_gadget_config=" + Base64.encode (raw_config.data);
++			string config_param = "xda_gadget_config=" + Base64.encode (raw_config.data);
+ 
+ 			var apple_strv_builder = new StringVectorBuilder (args_builder);
+ 
+diff --git a/src/host-session-service.vala b/src/host-session-service.vala
+index 18f17fe7..ac8ff858 100644
+--- a/src/host-session-service.vala
++++ b/src/host-session-service.vala
+@@ -686,7 +686,7 @@ namespace Frida {
+ 				promise.resolve (entry);
+ 			} catch (GLib.Error e) {
+ 				if (e is IOError.CANCELLED && (cancellable == null || !cancellable.is_cancelled ())) {
+-					e = new Error.PROCESS_NOT_RESPONDING ("Process with pid %u either refused to load frida-agent, " +
++					e = new Error.PROCESS_NOT_RESPONDING ("Process with pid %u either refused to load xda-core, " +
+ 						"or terminated during injection", pid);
+ 				}
+ 
+diff --git a/src/linux/helpers/Makefile b/src/linux/helpers/Makefile
+index f64f7c5b..0549c559 100644
+--- a/src/linux/helpers/Makefile
++++ b/src/linux/helpers/Makefile
+@@ -52,7 +52,7 @@ build-native: ext/linux/tools/include/nolibc/nolibc.h
+ 	rm -rf build
+ 	$(MESON) setup --prefix /usr --cross-file $(crossfile) -Db_lto=true build
+ 	DESTDIR=$(abspath build/dist) $(MESON) install -C build
+-	for f in build/dist/usr/share/frida-helpers/*; do \
++	for f in build/dist/usr/share/xda-helpers/*; do \
+ 		install -m644 $$f $(native_outdir)/; \
+ 	done
+ 
+diff --git a/src/linux/helpers/artifacts/native/arm/zymbiote.elf b/src/linux/helpers/artifacts/native/arm/zymbiote.elf
+index 6fc5f49b0aa6ec5a871f4c5739bb870ae223e839..e1547c851916af584077bbf261979eaac7a673d0 100644
+GIT binary patch
+delta 42
+ocmZ2ru)ttLrZ8(oN}_?m<UHYKC`(2}ax%XN2ZXm-Mude003h@W&j0`b
+
+delta 42
+ocmZ2ru)ttLrZ8(-QD#cw<UHYKC`(2}ax%XN2ZXm-Mude0061O^3IG5A
+
+diff --git a/src/linux/helpers/artifacts/native/arm64/zymbiote.elf b/src/linux/helpers/artifacts/native/arm64/zymbiote.elf
+index fee39cca51720936abf862fc370ca1cf0eee035c..fa0d56d819d0c94ceb2418399600076c389429ef 100644
+GIT binary patch
+delta 42
+lcmX>Qd?0wkN@doHltcrA$?KF)Ls@kyig1?X=DjM+tN>#z4)_27
+
+delta 42
+lcmX>Qd?0wkN@doxqRf=U$?KF)Ls@kyig1?X=DjM+tN?sF5HkP(
+
+diff --git a/src/linux/helpers/artifacts/native/x86/zymbiote.elf b/src/linux/helpers/artifacts/native/x86/zymbiote.elf
+index 6ec627435a5baf3262812612402cf9e8cc6aaf7c..2a5b0b49afca383fa4ad9b4451258ee2ffb18106 100644
+GIT binary patch
+delta 42
+ocmeyN_d{=kq%dnmN}_?mWI5qxDC>-{<mCOr91z~-Gs0__0YV}Uj{pDw
+
+delta 42
+ocmeyN_d{=kq%dn*QD#cwWI5qxDC>-{<mCOr91z~-Gs0__0a=U>$^ZZW
+
+diff --git a/src/linux/helpers/artifacts/native/x86_64/zymbiote.elf b/src/linux/helpers/artifacts/native/x86_64/zymbiote.elf
+index e6e8f36cf94cfb2dbe65299b2b4a539aeec7e40c..692aec912cd0287b34871a4c9c5e2e908d93009e 100644
+GIT binary patch
+delta 42
+lcmbPXIKyxQr!Z?pN}_?mWIo~3P}V(RML0`xv#dxp3jigQ4QT)X
+
+delta 42
+lcmbPXIKyxQr!Z?;QD#cwWIo~3P}V(RML0`xv#dxp3jjW%4x|78
+
+diff --git a/src/linux/helpers/meson.build b/src/linux/helpers/meson.build
+index 32b7865e..0de6de68 100644
+--- a/src/linux/helpers/meson.build
++++ b/src/linux/helpers/meson.build
+@@ -64,7 +64,7 @@ custom_target('bootstrapper-bin',
+   input: [bootstrapper],
+   output: ['bootstrapper.bin'],
+   command: [objcopy, objcopy_flags, '@INPUT0@', '@OUTPUT0@'],
+-  install_dir: 'share' / 'frida-helpers',
++  install_dir: 'share' / 'xda-helpers',
+   install: true,
+ )
+ test('bootstrapper', executable('test-bootstrapper', bootstrapper_sources,
+@@ -83,7 +83,7 @@ custom_target('loader-bin',
+   input: [loader],
+   output: ['loader.bin'],
+   command: [objcopy, objcopy_flags, '@INPUT0@', '@OUTPUT0@'],
+-  install_dir: 'share' / 'frida-helpers',
++  install_dir: 'share' / 'xda-helpers',
+   install: true,
+ )
+ 
+@@ -98,7 +98,7 @@ if host_machine.system() == 'android'
+     c_args: zymbiote_flags + extra_flags,
+     link_args: extra_link_args,
+     link_depends: [helper_lds],
+-    install_dir: 'share' / 'frida-helpers',
++    install_dir: 'share' / 'xda-helpers',
+     install: true,
+   )
+ endif
+diff --git a/src/linux/helpers/zymbiote.c b/src/linux/helpers/zymbiote.c
+index b9fa5268..4849dc75 100644
+--- a/src/linux/helpers/zymbiote.c
++++ b/src/linux/helpers/zymbiote.c
+@@ -37,11 +37,11 @@ struct _ZymbioteContext
+ 
+ ZymbioteContext zymbiote =
+ {
+-  .socket_path = "/frida-zymbiote-00000000000000000000000000000000",
++  .socket_path = "/xda0-zymbiote-00000000000000000000000000000000",
+ };
+ 
+-int frida_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name);
+-int frida_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name);
++int xda00_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name);
++int xda00_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name);
+ 
+ static void frida_wait_for_permission_to_resume (const char * process_name, bool * revert_now);
+ 
+@@ -57,7 +57,7 @@ static ssize_t frida_recv (int sockfd, void * buf, size_t len, int flags);
+ __attribute__ ((section (".text.entrypoint")))
+ __attribute__ ((visibility ("default")))
+ int
+-frida_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name)
++xda00_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name)
+ {
+   int res;
+ 
+@@ -77,7 +77,7 @@ frida_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const c
+ __attribute__ ((section (".text.entrypoint")))
+ __attribute__ ((visibility ("default")))
+ int
+-frida_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name)
++xda00_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name)
+ {
+   const char * name_utf8;
+   bool revert_now;
+diff --git a/src/linux/kernel-injector.vala b/src/linux/kernel-injector.vala
+index 45a856bc..f8df9f0b 100644
+--- a/src/linux/kernel-injector.vala
++++ b/src/linux/kernel-injector.vala
+@@ -168,7 +168,7 @@ namespace Frida {
+ 		private extern static long syscall (long number, ...);
+ 	}
+ 
+-	// Injects frida-agent.so using the kernel module's ptrace-free primitives: stage the loader +
++	// Injects xda-core.so using the kernel module's ptrace-free primitives: stage the loader +
+ 	// context in a fresh region, then spawn a bootstrap thread straight into it. The loader hands
+ 	// off to a real pthread it creates, so the only libc call on the kernel-spawned thread is
+ 	// pthread_create — which we give a private, isolated bionic TLS so it never touches the
+diff --git a/src/linux/linux-host-session.vala b/src/linux/linux-host-session.vala
+index aa7d26ce..349e652c 100644
+--- a/src/linux/linux-host-session.vala
++++ b/src/linux/linux-host-session.vala
+@@ -60,16 +60,16 @@ namespace Frida {
+ 			injector.uninjected.connect (on_uninjected);
+ 
+ #if HAVE_EMBEDDED_ASSETS
+-			var blob32 = Frida.Data.Agent.get_frida_agent_32_so_blob ();
+-			var blob64 = Frida.Data.Agent.get_frida_agent_64_so_blob ();
+-			var emulated_arm = Frida.Data.Agent.get_frida_agent_arm_so_blob ();
+-			var emulated_arm64 = Frida.Data.Agent.get_frida_agent_arm64_so_blob ();
+-			agent = new AgentDescriptor (PathTemplate ("frida-agent-<arch>.so"),
++			var blob32 = Frida.Data.Agent.get_xda_core_32_so_blob ();
++			var blob64 = Frida.Data.Agent.get_xda_core_64_so_blob ();
++			var emulated_arm = Frida.Data.Agent.get_xda_core_arm_so_blob ();
++			var emulated_arm64 = Frida.Data.Agent.get_xda_core_arm64_so_blob ();
++			agent = new AgentDescriptor (PathTemplate ("xda-core-<arch>.so"),
+ 				new Bytes.static (blob32.data),
+ 				new Bytes.static (blob64.data),
+ 				new AgentResource[] {
+-					new AgentResource ("frida-agent-arm.so", new Bytes.static (emulated_arm.data), tempdir),
+-					new AgentResource ("frida-agent-arm64.so", new Bytes.static (emulated_arm64.data), tempdir),
++					new AgentResource ("xda-core-arm.so", new Bytes.static (emulated_arm.data), tempdir),
++					new AgentResource ("xda-core-arm64.so", new Bytes.static (emulated_arm64.data), tempdir),
+ 				},
+ 				AgentMode.INSTANCED,
+ 				tempdir);
+@@ -405,7 +405,7 @@ namespace Frida {
+ 		protected override async Future<IOStream> perform_attach_to (uint pid, HashTable<string, Variant> options,
+ 				Cancellable? cancellable, out Object? transport) throws Error, IOError {
+ 			uint id;
+-			string entrypoint = "frida_agent_main";
++			string entrypoint = "xda_core_main";
+ 			string parameters = make_agent_parameters (pid, "", options);
+ 			AgentFeatures features = CONTROL_CHANNEL;
+ 			var linjector = (Linjector) injector;
+@@ -430,10 +430,10 @@ namespace Frida {
+ 			unowned string name;
+ 			switch (cpu_type_from_pid (pid)) {
+ 				case Gum.CpuType.IA32:
+-					name = "frida-agent-arm.so";
++					name = "xda-core-arm.so";
+ 					break;
+ 				case Gum.CpuType.AMD64:
+-					name = "frida-agent-arm64.so";
++					name = "xda-core-arm64.so";
+ 					break;
+ 				default:
+ 					throw new Error.NOT_SUPPORTED ("Emulated realm is not supported on this architecture");
+@@ -480,7 +480,7 @@ namespace Frida {
+ 
+ 			try {
+ 				string instance_id = Uuid.string_random ().replace ("-", "");
+-				string helper_path = "/data/local/tmp/frida-helper-" + instance_id + ".dex";
++				string helper_path = "/data/local/tmp/xda-helper-" + instance_id + ".dex";
+ 				FileUtils.set_data (helper_path, Frida.Data.Android.get_helper_dex_blob ().data);
+ 				Posix.chmod (helper_path, 0644);
+ 
+@@ -557,7 +557,7 @@ namespace Frida {
+ 
+ 		construct {
+ 			main_loop = new MainLoop (main_context, false);
+-			worker_thread = new Thread<void> ("frida-android-helper", run);
++			worker_thread = new Thread<void> ("xda-android-helper", run);
+ 		}
+ 
+ 		public async void close (Cancellable? cancellable) throws IOError {
+@@ -740,7 +740,7 @@ namespace Frida {
+ 
+ 			(*env)->push_local_frame (env, 5);
+ 			try {
+-				var backend_class = (*env)->find_class (env, "re/frida/HelperBackend");
++				var backend_class = (*env)->find_class (env, "re/xda/HelperBackend");
+ 				assert (backend_class != null);
+ 
+ 				var ctor = (*env)->get_method_id (env, backend_class, "<init>", "()V");
+@@ -1567,7 +1567,7 @@ namespace Frida {
+ 			ensure_request = new Promise<bool> ();
+ 
+ 			if (server_name == null) {
+-				string name = "/frida-zymbiote-" + Uuid.string_random ().replace ("-", "");
++				string name = "/xda00-zymbiote-" + Uuid.string_random ().replace ("-", "");
+ 				var address = new UnixSocketAddress.with_type (name, -1, UnixSocketAddressType.ABSTRACT);
+ 
+ 				try {
+@@ -1991,9 +1991,9 @@ namespace Frida {
+ 			uint64 setargv0 = 0;
+ 			uint64 setcontext = 0;
+ 			zymbiote.enumerate_exports (e => {
+-				if (e.name == "frida_zymbiote_replacement_setargv0")
++				if (e.name == "xda00_zymbiote_replacement_setargv0")
+ 					setargv0 = payload_base + (e.address - text.vm_address);
+-				else if (e.name == "frida_zymbiote_replacement_setcontext")
++				else if (e.name == "xda00_zymbiote_replacement_setcontext")
+ 					setcontext = payload_base + (e.address - text.vm_address);
+ 				return true;
+ 			});
+@@ -2004,7 +2004,7 @@ namespace Frida {
+ 
+ 			unowned uint8[] payload_template = blob.data[text.file_offset:text.file_offset + text.file_size];
+ 
+-			void * p = memmem (payload_template, "/frida-zymbiote-00000000000000000000000000000000".data);
++			void * p = memmem (payload_template, "/xda00-zymbiote-00000000000000000000000000000000".data);
+ 			assert (p != null);
+ 			size_t data_offset = (uint8 *) p - (uint8 *) payload_template;
+ 
+diff --git a/src/linux/system-linux.c b/src/linux/system-linux.c
+index 1f3fad87..6327205c 100644
+--- a/src/linux/system-linux.c
++++ b/src/linux/system-linux.c
+@@ -200,7 +200,7 @@ frida_temporary_directory_get_system_tmp (void)
+ 
+   /*
+    * If the temporary directory resides on a file-system which is marked
+-   * `noexec`, then we won't be able to write the frida-agent.so there and
++   * `noexec`, then we won't be able to write the xda-core.so there and
+    * subsequently dlopen() it inside the target application as it will result in
+    * permission denied.
+    *
+diff --git a/src/linux/frida-helper-backend-glue.c b/src/linux/xda-helper-backend-glue.c
+similarity index 98%
+rename from src/linux/frida-helper-backend-glue.c
+rename to src/linux/xda-helper-backend-glue.c
+index 4af169ad..84098f03 100644
+--- a/src/linux/frida-helper-backend-glue.c
++++ b/src/linux/xda-helper-backend-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ 
+ #include <sys/syscall.h>
+ 
+diff --git a/src/linux/frida-helper-backend-types.c b/src/linux/xda-helper-backend-types.c
+similarity index 91%
+rename from src/linux/frida-helper-backend-types.c
+rename to src/linux/xda-helper-backend-types.c
+index 9513fa3b..b2f153ad 100644
+--- a/src/linux/frida-helper-backend-types.c
++++ b/src/linux/xda-helper-backend-types.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ #include "helpers/inject-context.h"
+ 
+ G_STATIC_ASSERT (sizeof (FridaHelperBootstrapContext) == sizeof (FridaBootstrapContext));
+diff --git a/src/linux/frida-helper-backend.resources b/src/linux/xda-helper-backend.resources
+similarity index 100%
+rename from src/linux/frida-helper-backend.resources
+rename to src/linux/xda-helper-backend.resources
+diff --git a/src/linux/frida-helper-backend.vala b/src/linux/xda-helper-backend.vala
+similarity index 100%
+rename from src/linux/frida-helper-backend.vala
+rename to src/linux/xda-helper-backend.vala
+diff --git a/src/linux/frida-helper-process.vala b/src/linux/xda-helper-process.vala
+similarity index 98%
+rename from src/linux/frida-helper-process.vala
+rename to src/linux/xda-helper-process.vala
+index a7daf020..8104fa5f 100644
+--- a/src/linux/frida-helper-process.vala
++++ b/src/linux/xda-helper-process.vala
+@@ -651,13 +651,13 @@ namespace Frida {
+ 			this.tempdir = tempdir;
+ 
+ #if HAVE_EMBEDDED_ASSETS
+-			var blob32 = Frida.Data.Helper.get_frida_helper_32_blob ();
++			var blob32 = Frida.Data.Helper.get_xda_helper_32_blob ();
+ 			if (blob32.data.length > 0)
+-				helper32 = make_temporary_helper ("frida-helper-32", blob32.data);
++				helper32 = make_temporary_helper ("xda-helper-32", blob32.data);
+ 
+-			var blob64 = Frida.Data.Helper.get_frida_helper_64_blob ();
++			var blob64 = Frida.Data.Helper.get_xda_helper_64_blob ();
+ 			if (blob64.data.length > 0)
+-				helper64 = make_temporary_helper ("frida-helper-64", blob64.data);
++				helper64 = make_temporary_helper ("xda-helper-64", blob64.data);
+ #else
+ 			var tpl = PathTemplate (Frida.helper_path);
+ 			string path = tpl.expand ((sizeof (void *) == 8) ? "32" : "64");
+diff --git a/src/linux/frida-helper-service.vala b/src/linux/xda-helper-service.vala
+similarity index 100%
+rename from src/linux/frida-helper-service.vala
+rename to src/linux/xda-helper-service.vala
+diff --git a/src/linux/frida-helper-types.vala b/src/linux/xda-helper-types.vala
+similarity index 98%
+rename from src/linux/frida-helper-types.vala
+rename to src/linux/xda-helper-types.vala
+index 86609b27..b2e7b702 100644
+--- a/src/linux/frida-helper-types.vala
++++ b/src/linux/xda-helper-types.vala
+@@ -43,7 +43,7 @@ namespace Frida {
+ 		CONTROL_CHANNEL,
+ 	}
+ 
+-	[DBus (name = "re.frida.Helper")]
++	[DBus (name = "re.xda.Helper")]
+ 	public interface LinuxRemoteHelper : Object {
+ 		public signal void output (uint pid, int fd, uint8[] data);
+ 		public signal void uninjected (uint id);
+@@ -91,6 +91,6 @@ namespace Frida {
+ 	}
+ 
+ 	namespace ObjectPath {
+-		public const string HELPER = "/re/frida/Helper";
++		public const string HELPER = "/re/xda/Helper";
+ 	}
+ }
+diff --git a/src/linux/frida-helper.version b/src/linux/xda-helper.version
+similarity index 100%
+rename from src/linux/frida-helper.version
+rename to src/linux/xda-helper.version
+diff --git a/src/meson.build b/src/meson.build
+index 614c4f33..c5bb0ee0 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -64,7 +64,7 @@ if host_os == 'android' or have_droidy_backend
+ endif
+ 
+ if have_local_backend
+-  post_process_helper = post_process + ['executable', 're.frida.Helper']
++  post_process_helper = post_process + ['executable', 're.xda.Helper']
+ 
+   embed_helper = [
+     python,
+@@ -93,23 +93,23 @@ if have_local_backend
+       'windows' / 'windows-host-session-glue.c',
+       'windows' / 'winjector.vala',
+       'windows' / 'winjector-glue.c',
+-      'windows' / 'frida-helper-process.vala',
+-      'windows' / 'frida-helper-process-glue.c',
++      'windows' / 'xda-helper-process.vala',
++      'windows' / 'xda-helper-process-glue.c',
+       'windows' / 'access-helpers.c',
+     ]
+     backend_vala_args += '--pkg=frida-gum-windows-1.0'
+ 
+     helper_backend_sources = [
+-      'windows' / 'frida-helper-backend.vala',
+-      'windows' / 'frida-helper-backend-glue.c',
+-      'windows' / 'frida-helper-types.vala',
++      'windows' / 'xda-helper-backend.vala',
++      'windows' / 'xda-helper-backend-glue.c',
++      'windows' / 'xda-helper-types.vala',
+       'windows' / 'wait-handle-source.c',
+     ]
+     helper_backend_vala_args = [
+       base_vala_args,
+       '--pkg=frida-gum-windows-1.0',
+     ]
+-    helper_backend = static_library('frida-helper-backend', helper_backend_sources,
++    helper_backend = static_library('xda-helper-backend', helper_backend_sources,
+       vala_args: helper_backend_vala_args,
+       c_args: frida_component_cflags,
+       dependencies: [gio_dep, gee_dep, gum_dep, base_dep],
+@@ -117,16 +117,16 @@ if have_local_backend
+     backend_libs += helper_backend
+ 
+     helper_sources = [
+-      'windows' / 'frida-helper-service.vala',
+-      'windows' / 'frida-helper-service-glue.c',
++      'windows' / 'xda-helper-service.vala',
++      'windows' / 'xda-helper-service-glue.c',
+     ]
+-    raw_helper = executable('frida-helper-raw', helper_sources,
++    raw_helper = executable('xda-helper-raw', helper_sources,
+       vala_args: helper_backend_vala_args,
+       link_with: helper_backend,
+       dependencies: [gio_dep, gee_dep, gum_dep, base_dep, pipe_dep],
+     )
+ 
+-    helper = custom_target('frida-helper',
++    helper = custom_target('xda-helper',
+       input: raw_helper,
+       output: helper_name,
+       command: post_process_helper,
+@@ -184,7 +184,7 @@ if have_local_backend
+       'darwin' / 'darwin-host-session.vala',
+       'darwin' / 'darwin-host-session-glue.m',
+       'darwin' / 'fruitjector.vala',
+-      'darwin' / 'frida-helper-process.vala',
++      'darwin' / 'xda-helper-process.vala',
+     ]
+ 
+     darwin_data = custom_target('frida-data-darwin',
+@@ -214,20 +214,20 @@ if have_local_backend
+     backend_sources += [darwin_data]
+ 
+     helper_backend_sources = [
+-      'darwin' / 'frida-helper-types.vala',
++      'darwin' / 'xda-helper-types.vala',
+       'darwin' / 'policy-softener.vala',
+       'darwin' / 'policy-softener-glue.c',
+     ]
+     if host_os in ['macos', 'ios', 'tvos', 'xros']
+       helper_backend_sources += [
+-        'darwin' / 'frida-helper-backend.vala',
+-        'darwin' / 'frida-helper-backend-glue.m',
++        'darwin' / 'xda-helper-backend.vala',
++        'darwin' / 'xda-helper-backend-glue.m',
+         'darwin' / 'policyd.c',
+         'darwin' / 'policyd-client.c',
+       ]
+     else
+       helper_backend_sources += [
+-        'darwin' / 'frida-helper-null-backend.vala',
++        'darwin' / 'xda-helper-null-backend.vala',
+       ]
+     endif
+     if host_os in ['ios', 'tvos', 'xros']
+@@ -238,7 +238,7 @@ if have_local_backend
+       ]
+     endif
+     helper_backend_vala_args = base_vala_args
+-    helper_backend = static_library('frida-helper-backend', helper_backend_sources,
++    helper_backend = static_library('xda-helper-backend', helper_backend_sources,
+       c_args: frida_component_cflags,
+       vala_args: [
+         helper_backend_vala_args,
+@@ -253,18 +253,18 @@ if have_local_backend
+     backend_libs += [helper_backend]
+ 
+     helper_sources = [
+-      'darwin' / 'frida-helper-service.vala',
+-      'darwin' / 'frida-helper-service-glue.m',
++      'darwin' / 'xda-helper-service.vala',
++      'darwin' / 'xda-helper-service-glue.m',
+     ]
+-    helper_symlist = 'darwin' / 'frida-helper.symbols'
++    helper_symlist = 'darwin' / 'xda-helper.symbols'
+     helper_link_args = ['-Wl,-exported_symbols_list,' + meson.current_source_dir() / helper_symlist]
+     helper_link_depends = [helper_symlist]
+     if host_os == 'macos'
+-      helper_plist = 'darwin' / 'frida-helper.plist'
++      helper_plist = 'darwin' / 'xda-helper.plist'
+       helper_link_args += ['-Wl,-sectcreate,__TEXT,__info_plist,' + meson.current_source_dir() / helper_plist]
+       helper_link_depends += [helper_plist]
+     endif
+-    raw_helper = executable('frida-helper-raw', helper_sources,
++    raw_helper = executable('xda-helper-raw', helper_sources,
+       vala_args: [helper_backend_vala_args, '--pkg=posix'],
+       link_args: [helper_link_args, backend_libs_private],
+       link_depends: helper_link_depends,
+@@ -275,10 +275,10 @@ if have_local_backend
+ 
+     need_universal_helper = assets_mode == 'installed' and helper_compat != ''
+ 
+-    helper = custom_target('frida-helper',
++    helper = custom_target('xda-helper',
+       input: [
+         raw_helper,
+-        'darwin' / 'frida-helper.xcent',
++        'darwin' / 'xda-helper.xcent',
+       ],
+       output: need_universal_helper ? f'@helper_name@-@host_abi@' : helper_name,
+       command: post_process_helper + '@INPUT1@',
+@@ -288,7 +288,7 @@ if have_local_backend
+     )
+ 
+     if need_universal_helper
+-      custom_target('frida-helper-universal',
++      custom_target('xda-helper-universal',
+         input: helper,
+         output: helper_name,
+         command: [
+@@ -333,7 +333,7 @@ if have_local_backend
+       'linux' / 'linux-host-session.vala',
+       'linux' / 'linjector.vala',
+       'linux' / 'linjector-glue.c',
+-      'linux' / 'frida-helper-process.vala',
++      'linux' / 'xda-helper-process.vala',
+       'linux' / 'supersu.vala',
+     ]
+ 
+@@ -349,10 +349,10 @@ if have_local_backend
+     endif
+ 
+     helper_backend_sources = [
+-      'linux' / 'frida-helper-backend.vala',
+-      'linux' / 'frida-helper-backend-glue.c',
+-      'linux' / 'frida-helper-backend-types.c',
+-      'linux' / 'frida-helper-types.vala',
++      'linux' / 'xda-helper-backend.vala',
++      'linux' / 'xda-helper-backend-glue.c',
++      'linux' / 'xda-helper-backend-types.c',
++      'linux' / 'xda-helper-types.vala',
+       'linux' / 'spawn-gater.vala',
+       'linux' / 'activity-sampler.vala',
+       'linux' / 'syscall-tracer.vala',
+@@ -384,7 +384,7 @@ if have_local_backend
+     helpers_bpf_arch_dir = helpers_artifacts_dir / 'bpf' / bpf_arch
+     helper_backend_data = custom_target('frida-data-helper-backend',
+       input: [
+-        'linux' / 'frida-helper-backend.resources',
++        'linux' / 'xda-helper-backend.resources',
+         helpers_native_dir / 'bootstrapper.bin',
+         helpers_native_dir / 'loader.bin',
+         helpers_bpf_noarch_dir  / 'activity-sampler.elf',
+@@ -418,7 +418,7 @@ if have_local_backend
+       gum_vala_args,
+       '--pkg=posix',
+     ]
+-    helper_backend = static_library('frida-helper-backend', helper_backend_sources,
++    helper_backend = static_library('xda-helper-backend', helper_backend_sources,
+       c_args: frida_component_cflags,
+       vala_args: [
+         helper_backend_vala_args,
+@@ -432,12 +432,12 @@ if have_local_backend
+     backend_libs += [helper_backend]
+ 
+     helper_sources = [
+-      'linux' / 'frida-helper-service.vala',
++      'linux' / 'xda-helper-service.vala',
+     ]
+-    helper_symscript = 'linux' / 'frida-helper.version'
++    helper_symscript = 'linux' / 'xda-helper.version'
+     helper_link_args = ['-Wl,--version-script,' + meson.current_source_dir() / helper_symscript]
+     helper_link_depends = [helper_symscript]
+-    raw_helper = executable('frida-helper-raw', helper_sources,
++    raw_helper = executable('xda-helper-raw', helper_sources,
+       vala_args: helper_backend_vala_args,
+       link_args: helper_link_args,
+       link_depends: helper_link_depends,
+@@ -445,7 +445,7 @@ if have_local_backend
+       dependencies: [gio_dep, gio_unix_dep, gee_dep, gum_dep, base_dep],
+     )
+ 
+-    helper = custom_target('frida-helper',
++    helper = custom_target('xda-helper',
+       input: raw_helper,
+       output: helper_name,
+       command: post_process_helper,
+diff --git a/src/qnx/qnx-host-session.vala b/src/qnx/qnx-host-session.vala
+index 304996fd..3b9de690 100644
+--- a/src/qnx/qnx-host-session.vala
++++ b/src/qnx/qnx-host-session.vala
+@@ -23,7 +23,7 @@ namespace Frida {
+ 			injector = new Qinjector ();
+ 			injector.uninjected.connect (on_uninjected);
+ 
+-			var blob = Frida.Data.Agent.get_frida_agent_so_blob ();
++			var blob = Frida.Data.Agent.get_xda_core_so_blob ();
+ 			agent_desc = new AgentDescriptor (blob.name, new MemoryInputStream.from_data (blob.data, null));
+ 		}
+ 
+@@ -118,7 +118,7 @@ namespace Frida {
+ 
+ 			var stream_request = Pipe.open (t.local_address, cancellable);
+ 
+-			var id = yield qinjector.inject_library_resource (pid, agent_desc, "frida_agent_main",
++			var id = yield qinjector.inject_library_resource (pid, agent_desc, "xda_core_main",
+ 				make_agent_parameters (pid, t.remote_address, options), cancellable);
+ 			injectee_by_pid[pid] = id;
+ 
+diff --git a/src/simmy/simmy-host-session-glue.m b/src/simmy/simmy-host-session-glue.m
+index 7a4fb59e..c140cfd7 100644
+--- a/src/simmy/simmy-host-session-glue.m
++++ b/src/simmy/simmy-host-session-glue.m
+@@ -83,7 +83,7 @@ - (SimDeviceSet *)defaultDeviceSetWithError:(NSError * _Nullable * _Nullable)err
+   FridaSimmyContext * ctx;
+ 
+   ctx = g_slice_new0 (FridaSimmyContext);
+-  ctx->dispatch_queue = dispatch_queue_create ("re.frida.simmy.queue", DISPATCH_QUEUE_SERIAL);
++  ctx->dispatch_queue = dispatch_queue_create ("re.xda.simmy.queue", DISPATCH_QUEUE_SERIAL);
+ 
+   ctx->on_device_added = on_device_added;
+   ctx->on_device_added_target = on_device_added_target;
+diff --git a/src/socket/socket-host-session.vala b/src/socket/socket-host-session.vala
+index 02605a2a..5d556f91 100644
+--- a/src/socket/socket-host-session.vala
++++ b/src/socket/socket-host-session.vala
+@@ -93,9 +93,9 @@ namespace Frida {
+ 				socket_connection = yield client.connect_async (connectable, cancellable);
+ 			} catch (GLib.Error e) {
+ 				if (e is IOError.CONNECTION_REFUSED)
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server");
+ 				else
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server: %s", e.message);
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server: %s", e.message);
+ 			}
+ 
+ 			Socket socket = socket_connection.socket;
+@@ -145,7 +145,7 @@ namespace Frida {
+ 					auth_service = yield connection.get_proxy (null, ObjectPath.AUTHENTICATION_SERVICE,
+ 						DO_NOT_LOAD_PROPERTIES, cancellable);
+ 				} catch (IOError e) {
+-					throw new Error.PROTOCOL ("Incompatible frida-server version");
++					throw new Error.PROTOCOL ("Incompatible xda-server version");
+ 				}
+ 
+ 				try {
+@@ -160,7 +160,7 @@ namespace Frida {
+ 				host_session = yield connection.get_proxy (null, ObjectPath.HOST_SESSION, DO_NOT_LOAD_PROPERTIES,
+ 					cancellable);
+ 			} catch (IOError e) {
+-				throw new Error.PROTOCOL ("Incompatible frida-server version");
++				throw new Error.PROTOCOL ("Incompatible xda-server version");
+ 			}
+ 
+ 			var entry = new HostEntry (connection, host_session, keepalive_interval);
+diff --git a/src/windows/wait-handle-source.c b/src/windows/wait-handle-source.c
+index 35a13d30..bcd0c210 100644
+--- a/src/windows/wait-handle-source.c
++++ b/src/windows/wait-handle-source.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ 
+ #include <windows.h>
+ 
+diff --git a/src/windows/windows-host-session.vala b/src/windows/windows-host-session.vala
+index 33ee49ca..1d2a7dc1 100644
+--- a/src/windows/windows-host-session.vala
++++ b/src/windows/windows-host-session.vala
+@@ -47,10 +47,10 @@ namespace Frida {
+ 			injector.uninjected.connect (on_uninjected);
+ 
+ #if HAVE_EMBEDDED_ASSETS
+-			agent = new AgentDescriptor (PathTemplate ("<arch>\\frida-agent.dll"),
+-				new Bytes.static (Frida.Data.Agent.get_frida_agent_arm64_dll_blob ().data),
+-				new Bytes.static (Frida.Data.Agent.get_frida_agent_x86_64_dll_blob ().data),
+-				new Bytes.static (Frida.Data.Agent.get_frida_agent_x86_dll_blob ().data),
++			agent = new AgentDescriptor (PathTemplate ("<arch>\\xda-core.dll"),
++				new Bytes.static (Frida.Data.Agent.get_xda_core_arm64_dll_blob ().data),
++				new Bytes.static (Frida.Data.Agent.get_xda_core_x86_64_dll_blob ().data),
++				new Bytes.static (Frida.Data.Agent.get_xda_core_x86_dll_blob ().data),
+ 				new AgentResource[] {
+ 					new AgentResource ("arm64\\dbghelp.dll",
+ 						new Bytes.static (Frida.Data.Agent.get_dbghelp_arm64_dll_blob ().data), tempdir),
+@@ -252,11 +252,11 @@ namespace Frida {
+ 
+ 			var winjector = injector as Winjector;
+ #if HAVE_EMBEDDED_ASSETS
+-			var id = yield winjector.inject_library_resource (pid, agent, "frida_agent_main",
++			var id = yield winjector.inject_library_resource (pid, agent, "xda_core_main",
+ 				make_agent_parameters (pid, t.remote_address, options), cancellable);
+ #else
+ 			var id = yield winjector.inject_library_file_with_template (pid,
+-				installed_agent_path_template (), "frida_agent_main",
++				installed_agent_path_template (), "xda_core_main",
+ 				make_agent_parameters (pid, t.remote_address, options),
+ 				installed_agent_dependencies (), cancellable);
+ #endif
+diff --git a/src/windows/frida-helper-backend-glue.c b/src/windows/xda-helper-backend-glue.c
+similarity index 99%
+rename from src/windows/frida-helper-backend-glue.c
+rename to src/windows/xda-helper-backend-glue.c
+index 4582b08c..ec8bff18 100644
+--- a/src/windows/frida-helper-backend-glue.c
++++ b/src/windows/xda-helper-backend-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ 
+ #include <gio/gio.h>
+ #include <gum/gum.h>
+diff --git a/src/windows/frida-helper-backend.vala b/src/windows/xda-helper-backend.vala
+similarity index 100%
+rename from src/windows/frida-helper-backend.vala
+rename to src/windows/xda-helper-backend.vala
+diff --git a/src/windows/frida-helper-process-glue.c b/src/windows/xda-helper-process-glue.c
+similarity index 97%
+rename from src/windows/frida-helper-process-glue.c
+rename to src/windows/xda-helper-process-glue.c
+index 7c152c68..aed93b1e 100644
+--- a/src/windows/frida-helper-process-glue.c
++++ b/src/windows/xda-helper-process-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-process-glue.h"
++#include "xda-helper-process-glue.h"
+ 
+ #define VC_EXTRALEAN
+ #include <objbase.h>
+diff --git a/src/windows/frida-helper-process-glue.h b/src/windows/xda-helper-process-glue.h
+similarity index 92%
+rename from src/windows/frida-helper-process-glue.h
+rename to src/windows/xda-helper-process-glue.h
+index c8a2f961..6fbb5855 100644
+--- a/src/windows/frida-helper-process-glue.h
++++ b/src/windows/xda-helper-process-glue.h
+@@ -1,7 +1,7 @@
+ #ifndef __FRIDA_HELPER_PROCESS_GLUE_H__
+ #define __FRIDA_HELPER_PROCESS_GLUE_H__
+ 
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ 
+ G_BEGIN_DECLS
+ 
+diff --git a/src/windows/frida-helper-process.vala b/src/windows/xda-helper-process.vala
+similarity index 97%
+rename from src/windows/frida-helper-process.vala
+rename to src/windows/xda-helper-process.vala
+index 8828f623..83621b01 100644
+--- a/src/windows/frida-helper-process.vala
++++ b/src/windows/xda-helper-process.vala
+@@ -159,7 +159,7 @@ namespace Frida {
+ 
+ 				stream_request = Pipe.open (transport.local_address, cancellable);
+ 
+-				new Thread<bool> ("frida-helper-factory", obtain_worker);
++				new Thread<bool> ("xda-helper-factory", obtain_worker);
+ 			}
+ 
+ 			return yield obtain_request.future.wait_async (cancellable);
+@@ -380,9 +380,9 @@ namespace Frida {
+ 
+ 		public ResourceStore (TemporaryDirectory tempdir) throws Error {
+ #if HAVE_EMBEDDED_ASSETS
+-			var helper_arm64 = add_helper ("arm64", Frida.Data.Helper.get_frida_helper_arm64_exe_blob (), tempdir);
+-			var helper_x86_64 = add_helper ("x86_64", Frida.Data.Helper.get_frida_helper_x86_64_exe_blob (), tempdir);
+-			var helper_x86 = add_helper ("x86", Frida.Data.Helper.get_frida_helper_x86_exe_blob (), tempdir);
++			var helper_arm64 = add_helper ("arm64", Frida.Data.Helper.get_xda_helper_arm64_exe_blob (), tempdir);
++			var helper_x86_64 = add_helper ("x86_64", Frida.Data.Helper.get_xda_helper_x86_64_exe_blob (), tempdir);
++			var helper_x86 = add_helper ("x86", Frida.Data.Helper.get_xda_helper_x86_exe_blob (), tempdir);
+ 
+ 			switch (Gum.Windows.query_native_cpu_type ()) {
+ 				case ARM64:
+@@ -418,7 +418,7 @@ namespace Frida {
+ 
+ #if HAVE_EMBEDDED_ASSETS
+ 		private TemporaryFile add_helper (string name, Frida.Data.Helper.Blob blob, TemporaryDirectory tempdir) throws Error {
+-			var file = new TemporaryFile.from_stream (@"frida-helper-$name.exe",
++			var file = new TemporaryFile.from_stream (@"xda-helper-$name.exe",
+ 				new MemoryInputStream.from_data (blob.data, null),
+ 				tempdir);
+ 			helpers.add (file);
+diff --git a/src/windows/frida-helper-service-glue.c b/src/windows/xda-helper-service-glue.c
+similarity index 99%
+rename from src/windows/frida-helper-service-glue.c
+rename to src/windows/xda-helper-service-glue.c
+index bc369071..d8c4375e 100644
+--- a/src/windows/frida-helper-service-glue.c
++++ b/src/windows/xda-helper-service-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-service-glue.h"
++#include "xda-helper-service-glue.h"
+ 
+ #include <windows.h>
+ 
+diff --git a/src/windows/frida-helper-service-glue.h b/src/windows/xda-helper-service-glue.h
+similarity index 95%
+rename from src/windows/frida-helper-service-glue.h
+rename to src/windows/xda-helper-service-glue.h
+index e9930d5b..2dd87afb 100644
+--- a/src/windows/frida-helper-service-glue.h
++++ b/src/windows/xda-helper-service-glue.h
+@@ -1,7 +1,7 @@
+ #ifndef __FRIDA_HELPER_SERVICE_GLUE_H__
+ #define __FRIDA_HELPER_SERVICE_GLUE_H__
+ 
+-#include "frida-helper-backend.h"
++#include "xda-helper-backend.h"
+ 
+ G_BEGIN_DECLS
+ 
+diff --git a/src/windows/frida-helper-service.vala b/src/windows/xda-helper-service.vala
+similarity index 100%
+rename from src/windows/frida-helper-service.vala
+rename to src/windows/xda-helper-service.vala
+diff --git a/src/windows/frida-helper-types.vala b/src/windows/xda-helper-types.vala
+similarity index 93%
+rename from src/windows/frida-helper-types.vala
+rename to src/windows/xda-helper-types.vala
+index 0d410202..ccb96f22 100644
+--- a/src/windows/frida-helper-types.vala
++++ b/src/windows/xda-helper-types.vala
+@@ -8,7 +8,7 @@ namespace Frida {
+ 			string[] dependencies, uint id, Cancellable? cancellable) throws Error, IOError;
+ 	}
+ 
+-	[DBus (name = "re.frida.Helper")]
++	[DBus (name = "re.xda.Helper")]
+ 	public interface WindowsRemoteHelper : Object {
+ 		public signal void uninjected (uint id);
+ 
+@@ -44,6 +44,6 @@ namespace Frida {
+ 	}
+ 
+ 	namespace ObjectPath {
+-		public const string HELPER = "/re/frida/Helper";
++		public const string HELPER = "/re/xda/Helper";
+ 	}
+ }

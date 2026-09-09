@@ -1,0 +1,52 @@
+diff --git a/bindings/gumjs/gumscriptscheduler.c b/bindings/gumjs/gumscriptscheduler.c
+index b86a6c57..34ea76bc 100644
+--- a/bindings/gumjs/gumscriptscheduler.c
++++ b/bindings/gumjs/gumscriptscheduler.c
+@@ -114,7 +114,7 @@ gum_script_scheduler_start (GumScriptScheduler * self)
+   {
+     self->js_loop = g_main_loop_new (self->js_context, TRUE);
+ 
+-    self->js_thread = g_thread_new ("gum-js-loop",
++    self->js_thread = g_thread_new ("xda-js-loop",
+         (GThreadFunc) gum_script_scheduler_run_js_loop, self);
+   }
+ }
+diff --git a/gum/backend-darwin/gumcodesegment-darwin.c b/gum/backend-darwin/gumcodesegment-darwin.c
+index 5e098e61..698ddeec 100644
+--- a/gum/backend-darwin/gumcodesegment-darwin.c
++++ b/gum/backend-darwin/gumcodesegment-darwin.c
+@@ -472,7 +472,7 @@ gum_code_segment_try_realize (GumCodeSegment * self,
+   gint res;
+   fsignatures_t sigs;
+ 
+-  self->fd = gum_file_open_tmp ("frida-XXXXXX.dylib", &dylib_path);
++  self->fd = gum_file_open_tmp ("xda-XXXXXX.dylib", &dylib_path);
+   if (self->fd == -1)
+     return FALSE;
+ 
+diff --git a/gum/backend-darwin/gumdarwinmapper.c b/gum/backend-darwin/gumdarwinmapper.c
+index bb1b47cd..2423dc3f 100644
+--- a/gum/backend-darwin/gumdarwinmapper.c
++++ b/gum/backend-darwin/gumdarwinmapper.c
+@@ -1029,7 +1029,7 @@ gum_darwin_mapper_alloc_and_emit_runtime (GumDarwinMapper * self,
+ 
+   strv_offsets[0] = 0;
+   g_string_append_printf (strv_blob,
+-      "frida_dylib_range=0x%" G_GINT64_MODIFIER "x,0x%" G_GSIZE_MODIFIER "x",
++      "xda_dylib_range=0x%" G_GINT64_MODIFIER "x,0x%" G_GSIZE_MODIFIER "x",
+       base_address, size);
+ 
+   for (i = 0; i != params->len; i++)
+diff --git a/gum/gum.c b/gum/gum.c
+index f0230bd3..def9b8a2 100644
+--- a/gum/gum.c
++++ b/gum/gum.c
+@@ -302,7 +302,7 @@ gum_init_embedded (void)
+   g_log_set_default_handler (gum_on_log_message, NULL);
+   gum_do_init ();
+ 
+-  g_set_prgname ("frida");
++  g_set_prgname ("xdagent");
+ 
+ #if defined (HAVE_LINUX) && defined (HAVE_GLIBC)
+   gum_libdl_prevent_unload ();
