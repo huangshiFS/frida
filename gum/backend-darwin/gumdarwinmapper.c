@@ -1029,7 +1029,7 @@ gum_darwin_mapper_alloc_and_emit_runtime (GumDarwinMapper * self,
 
   strv_offsets[0] = 0;
   g_string_append_printf (strv_blob,
-      "frida_dylib_range=0x%" G_GINT64_MODIFIER "x,0x%" G_GSIZE_MODIFIER "x",
+      "xda_dylib_range=0x%" G_GINT64_MODIFIER "x,0x%" G_GSIZE_MODIFIER "x",
       base_address, size);
 
   for (i = 0; i != params->len; i++)
