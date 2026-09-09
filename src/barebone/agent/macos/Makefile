@@ -43,8 +43,8 @@ AGENT_CC ?= clang -target $(CLANG_TARGET) -mkernel -nostdlibinc \
 stamp_version = sed -e 's/@FRIDA_VERSION@/$(FRIDA_VERSION)/' \
 	-e 's/@BUNDLE_VERSION@/$(BUNDLE_VERSION)/' Info.plist
 
-BUNDLE := frida-agent.kext
-BINARY := $(BUNDLE)/Contents/MacOS/frida-agent
+BUNDLE := xda-core.kext
+BINARY := $(BUNDLE)/Contents/MacOS/xda-core
 
 all: $(BUNDLE)
 
@@ -53,12 +53,12 @@ skeleton: frida-kext.o Info.plist
 	$(stamp_version) > $(BUNDLE)/Contents/Info.plist
 	$(shell xcrun --find ld) -kext -arch $(ARCH) -o $(BINARY) frida-kext.o
 
-$(BUNDLE): frida-agent Info.plist
+$(BUNDLE): xda-core Info.plist
 	mkdir -p $(BUNDLE)/Contents/MacOS
 	$(stamp_version) > $(BUNDLE)/Contents/Info.plist
-	cp frida-agent $(BINARY)
+	cp xda-core $(BINARY)
 
-frida-agent: frida-kext.o frida-signing.o agent
+xda-core: frida-kext.o frida-signing.o agent
 	$(shell xcrun --find ld) -kext -arch $(ARCH) -o $@ \
 		frida-kext.o \
 		frida-signing.o \
@@ -83,6 +83,6 @@ agent:
 		--target-dir $(AGENT_TARGET_DIR) $(AGENT_BUILD_STD)
 
 clean:
-	rm -rf $(BUNDLE) frida-agent frida-kext.o frida-signing.o
+	rm -rf $(BUNDLE) xda-core frida-kext.o frida-signing.o
 
 .PHONY: all agent clean skeleton

@@ -205,7 +205,7 @@ namespace Frida.Barebone {
 			elf.enumerate_symbols (e => {
 				if (e.name == "_start")
 					start_address = base_va + e.address;
-				else if (e.name == "frida_agent_left")
+				else if (e.name == "xda_core_left")
 					left_flag = base_va + e.address;
 				return true;
 			});

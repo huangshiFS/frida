@@ -1,6 +1,6 @@
 namespace Frida {
 	/**
-	 * Hosts a Frida control endpoint that frida-server-style clients can connect
+	 * Hosts a Frida control endpoint that xda-server-style clients can connect
 	 * to, exposing the local system over the network.
 	 */
 	public sealed class ControlService : Object {

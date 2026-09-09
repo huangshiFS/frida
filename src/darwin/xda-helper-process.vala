@@ -259,7 +259,7 @@ namespace Frida {
 		private static void throw_helper_error (GLib.Error e) throws Error, IOError {
 #if MACOS
 			if (e is IOError.CLOSED) {
-				throw new Error.PERMISSION_DENIED ("Oops, frida-helper appears to have crashed. It may have been killed " +
+				throw new Error.PERMISSION_DENIED ("Oops, xda-helper appears to have crashed. It may have been killed " +
 					"by the system while trying to access a hardened process. If this is the case, try setting these " +
 					"boot arguments: `sudo nvram boot-args=\"-arm64e_preview_abi thid_should_crash=0 " +
 					"tss_should_crash=0\"`. For more information, see: https://github.com/frida/frida-core/issues/524");
@@ -514,9 +514,9 @@ namespace Frida {
 #if HAVE_EMBEDDED_ASSETS
 			FileUtils.chmod (tempdir.path, 0755);
 
-			var blob = Frida.Data.Helper.get_frida_helper_blob ();
+			var blob = Frida.Data.Helper.get_xda_helper_blob ();
 			helper = new TemporaryHelperFile (
-				new TemporaryFile.from_stream ("frida-helper",
+				new TemporaryFile.from_stream ("xda-helper",
 					new MemoryInputStream.from_data (blob.data, null),
 					tempdir));
 			FileUtils.chmod (helper.path, 0700);
@@ -573,7 +573,7 @@ namespace Frida {
 				if (arm64e_offset == 0 || arm64_offset == 0)
 					return false;
 
-				var thin_file = new TemporaryFile.from_stream ("frida-helper-arm64",
+				var thin_file = new TemporaryFile.from_stream ("xda-helper-arm64",
 					new MemoryInputStream.from_data (universal_data[arm64_offset:arm64_offset + arm64_size], null),
 					tempdir);
 				FileUtils.chmod (thin_file.path, 0700);

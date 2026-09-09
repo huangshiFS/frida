@@ -168,7 +168,7 @@ namespace Frida {
 		private extern static long syscall (long number, ...);
 	}
 
-	// Injects frida-agent.so using the kernel module's ptrace-free primitives: stage the loader +
+	// Injects xda-core.so using the kernel module's ptrace-free primitives: stage the loader +
 	// context in a fresh region, then spawn a bootstrap thread straight into it. The loader hands
 	// off to a real pthread it creates, so the only libc call on the kernel-spawned thread is
 	// pthread_create — which we give a private, isolated bionic TLS so it never touches the

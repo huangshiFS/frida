@@ -7,7 +7,7 @@ loaded from the inside as an ordinary kernel module.
 
 |                   | XNU                                              | Linux                                     |
 |-------------------|--------------------------------------------------|-------------------------------------------|
-| Delivery          | remote stub injects a freestanding ELF           | `insmod frida-agent.ko`                   |
+| Delivery          | remote stub injects a freestanding ELF           | `insmod xda-core.ko`                   |
 | Kernel primitives | addresses patched into `.kernel_addrs` by the host | direct calls into `frida-kmod.c`        |
 | Bootstrap config  | GVariant blob written into guest memory          | module parameters                         |
 | Transport         | virtio hostlink or vsock                         | `/dev/frida` character device             |
@@ -140,14 +140,14 @@ The prelink half runs anywhere; the kbuild half needs the x86-64 Linux host abov
 Cross-building from macOS means running that step in a container holding the kernel
 tree.
 
-    adb push src/barebone/agent/linux/frida-agent.ko /data/local/tmp/
+    adb push src/barebone/agent/linux/xda-core.ko /data/local/tmp/
 
 ## Loading
 
-    insmod frida-agent.ko
+    insmod xda-core.ko
 
 The module's init path returns as soon as the worker thread is running — watch
-`dmesg` for `frida: listening on /dev/frida`. `rmmod frida-agent` unwinds in the
+`dmesg` for `frida: listening on /dev/frida`. `rmmod xda-core` unwinds in the
 reverse order and does not return until the worker is off the module's text.
 
 ## Talking to it
@@ -166,11 +166,11 @@ the module loads.
 
 ### Reaching it from a host
 
-Serve the Barebone device from a frida-server running on the target, so the `open()`
-happens next to the device node and the host talks to an ordinary frida-server:
+Serve the Barebone device from a xda-server running on the target, so the `open()`
+happens next to the device node and the host talks to an ordinary xda-server:
 
     FRIDA_BAREBONE_CONFIG=/data/local/tmp/linux-kmod.json \
-        frida-server --device barebone -l 127.0.0.1:27042
+        xda-server --device barebone -l 127.0.0.1:27042
 
 `etc/linux-kmod.json` is that config. From the host, with `adb forward tcp:27042
 tcp:27042` in place:

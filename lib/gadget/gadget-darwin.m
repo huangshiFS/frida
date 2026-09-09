@@ -6,7 +6,7 @@
 # define __WATCHOS_PROHIBITED
 #endif
 
-#include "frida-gadget.h"
+#include "xda-gadget.h"
 
 #include "frida-base.h"
 

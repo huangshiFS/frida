@@ -47,10 +47,10 @@ namespace Frida {
 			injector.uninjected.connect (on_uninjected);
 
 #if HAVE_EMBEDDED_ASSETS
-			agent = new AgentDescriptor (PathTemplate ("<arch>\\frida-agent.dll"),
-				new Bytes.static (Frida.Data.Agent.get_frida_agent_arm64_dll_blob ().data),
-				new Bytes.static (Frida.Data.Agent.get_frida_agent_x86_64_dll_blob ().data),
-				new Bytes.static (Frida.Data.Agent.get_frida_agent_x86_dll_blob ().data),
+			agent = new AgentDescriptor (PathTemplate ("<arch>\\xda-core.dll"),
+				new Bytes.static (Frida.Data.Agent.get_xda_core_arm64_dll_blob ().data),
+				new Bytes.static (Frida.Data.Agent.get_xda_core_x86_64_dll_blob ().data),
+				new Bytes.static (Frida.Data.Agent.get_xda_core_x86_dll_blob ().data),
 				new AgentResource[] {
 					new AgentResource ("arm64\\dbghelp.dll",
 						new Bytes.static (Frida.Data.Agent.get_dbghelp_arm64_dll_blob ().data), tempdir),
@@ -252,11 +252,11 @@ namespace Frida {
 
 			var winjector = injector as Winjector;
 #if HAVE_EMBEDDED_ASSETS
-			var id = yield winjector.inject_library_resource (pid, agent, "frida_agent_main",
+			var id = yield winjector.inject_library_resource (pid, agent, "xda_core_main",
 				make_agent_parameters (pid, t.remote_address, options), cancellable);
 #else
 			var id = yield winjector.inject_library_file_with_template (pid,
-				installed_agent_path_template (), "frida_agent_main",
+				installed_agent_path_template (), "xda_core_main",
 				make_agent_parameters (pid, t.remote_address, options),
 				installed_agent_dependencies (), cancellable);
 #endif

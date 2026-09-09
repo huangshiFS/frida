@@ -1,4 +1,4 @@
-#include "frida-helper-backend.h"
+#include "xda-helper-backend.h"
 
 #include "frida-tvos.h"
 
@@ -767,7 +767,7 @@ _frida_darwin_helper_backend_create_dispatch_context (FridaDarwinHelperBackend *
   FridaDispatchContext * ctx;
 
   ctx = g_slice_new (FridaDispatchContext);
-  ctx->dispatch_queue = dispatch_queue_create ("re.frida.helper.queue", DISPATCH_QUEUE_SERIAL);
+  ctx->dispatch_queue = dispatch_queue_create ("re.xda.helper.queue", DISPATCH_QUEUE_SERIAL);
 
   self->dispatch_context = ctx;
 }
@@ -1896,14 +1896,14 @@ _frida_darwin_helper_backend_prepare_spawn_instance_for_injection (FridaDarwinHe
    * We POSIX_SPAWN_START_SUSPENDED which means that the kernel will create
    * the task and its main thread, with the main thread's instruction pointer
    * pointed at __dyld_start. At this point neither dyld nor libc have been
-   * initialized, so we won't be able to inject frida-agent at this point.
+   * initialized, so we won't be able to inject xda-core at this point.
    *
    * So here's what we'll do before we try to inject our dylib:
    * - Get hold of the main thread to read its instruction pointer, which will
    *   tell us where dyld is in memory.
    * - Walk backwards to find dyld's Mach-O header.
    * - Walk its symbols and find a function that's called at a point where the process is
-   *   sufficiently initialized to load frida-agent, but still early enough so the app's
+   *   sufficiently initialized to load xda-core, but still early enough so the app's
    *   initializer(s) didn't get a chance to run.
    * - For processes using dyld v3's closure support we put a hardware breakpoint inside
    *   dyld::launchWithClosure() right after setInitialImageList() has been called.

@@ -1,4 +1,4 @@
-# Builds frida-agent.ko in two steps, because kbuild insists on owning the final
+# Builds xda-core.ko in two steps, because kbuild insists on owning the final
 # link:
 #
 #   1. Collapse the Rust staticlib plus everything it needs — the GumJS devkit and
@@ -112,7 +112,7 @@ LIBBUILTINS = $(FRIDA_SDK)/lib/libclang_rt.builtins.a
 # version, and on x86_64 the soft-float ABI is reachable only as an -Xclang feature.
 AGENT_CC ?= clang
 
-PRELINKED := frida-agent-prelinked.o.bin
+PRELINKED := xda-core-prelinked.o.bin
 
 AGENT_LIB_SOFTFLOAT := $(AGENT_TARGET_DIR)/libfrida-barebone-agent-softfloat.a
 
@@ -139,7 +139,7 @@ endif
 # follows from what the agent defines, and picolibc moves things between releases.
 LIBC := $(AGENT_TARGET_DIR)/libc-trimmed.a
 
-ENTRY_POINTS := frida_agent_start frida_agent_stop \
+ENTRY_POINTS := xda_core_start xda_core_stop \
 	gum_interceptor_obtain gum_interceptor_begin_transaction \
 	gum_interceptor_end_transaction gum_interceptor_replace \
 	gum_interceptor_revert
@@ -158,7 +158,7 @@ all: modules
 
 # A module that dies in its init path is left wedged under its own name until the
 # next boot, so bring-up wants a fresh one per attempt.
-MODULE_NAME ?= frida-agent
+MODULE_NAME ?= xda-core
 
 modules: $(PRELINKED)
 	$(MAKE) -C $(KDIR) $(if $(KOUT),O=$(KOUT)) M=$(CURDIR) ARCH=$(ARCH) \

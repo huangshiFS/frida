@@ -1,7 +1,7 @@
 #ifndef __FRIDA_HELPER_PROCESS_GLUE_H__
 #define __FRIDA_HELPER_PROCESS_GLUE_H__
 
-#include "frida-helper-backend.h"
+#include "xda-helper-backend.h"
 
 G_BEGIN_DECLS
 

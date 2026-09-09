@@ -159,7 +159,7 @@ namespace Frida {
 
 				stream_request = Pipe.open (transport.local_address, cancellable);
 
-				new Thread<bool> ("frida-helper-factory", obtain_worker);
+				new Thread<bool> ("xda-helper-factory", obtain_worker);
 			}
 
 			return yield obtain_request.future.wait_async (cancellable);
@@ -380,9 +380,9 @@ namespace Frida {
 
 		public ResourceStore (TemporaryDirectory tempdir) throws Error {
 #if HAVE_EMBEDDED_ASSETS
-			var helper_arm64 = add_helper ("arm64", Frida.Data.Helper.get_frida_helper_arm64_exe_blob (), tempdir);
-			var helper_x86_64 = add_helper ("x86_64", Frida.Data.Helper.get_frida_helper_x86_64_exe_blob (), tempdir);
-			var helper_x86 = add_helper ("x86", Frida.Data.Helper.get_frida_helper_x86_exe_blob (), tempdir);
+			var helper_arm64 = add_helper ("arm64", Frida.Data.Helper.get_xda_helper_arm64_exe_blob (), tempdir);
+			var helper_x86_64 = add_helper ("x86_64", Frida.Data.Helper.get_xda_helper_x86_64_exe_blob (), tempdir);
+			var helper_x86 = add_helper ("x86", Frida.Data.Helper.get_xda_helper_x86_exe_blob (), tempdir);
 
 			switch (Gum.Windows.query_native_cpu_type ()) {
 				case ARM64:
@@ -418,7 +418,7 @@ namespace Frida {
 
 #if HAVE_EMBEDDED_ASSETS
 		private TemporaryFile add_helper (string name, Frida.Data.Helper.Blob blob, TemporaryDirectory tempdir) throws Error {
-			var file = new TemporaryFile.from_stream (@"frida-helper-$name.exe",
+			var file = new TemporaryFile.from_stream (@"xda-helper-$name.exe",
 				new MemoryInputStream.from_data (blob.data, null),
 				tempdir);
 			helpers.add (file);

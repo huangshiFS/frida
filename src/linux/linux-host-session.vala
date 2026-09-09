@@ -60,16 +60,16 @@ namespace Frida {
 			injector.uninjected.connect (on_uninjected);
 
 #if HAVE_EMBEDDED_ASSETS
-			var blob32 = Frida.Data.Agent.get_frida_agent_32_so_blob ();
-			var blob64 = Frida.Data.Agent.get_frida_agent_64_so_blob ();
-			var emulated_arm = Frida.Data.Agent.get_frida_agent_arm_so_blob ();
-			var emulated_arm64 = Frida.Data.Agent.get_frida_agent_arm64_so_blob ();
-			agent = new AgentDescriptor (PathTemplate ("frida-agent-<arch>.so"),
+			var blob32 = Frida.Data.Agent.get_xda_core_32_so_blob ();
+			var blob64 = Frida.Data.Agent.get_xda_core_64_so_blob ();
+			var emulated_arm = Frida.Data.Agent.get_xda_core_arm_so_blob ();
+			var emulated_arm64 = Frida.Data.Agent.get_xda_core_arm64_so_blob ();
+			agent = new AgentDescriptor (PathTemplate ("xda-core-<arch>.so"),
 				new Bytes.static (blob32.data),
 				new Bytes.static (blob64.data),
 				new AgentResource[] {
-					new AgentResource ("frida-agent-arm.so", new Bytes.static (emulated_arm.data), tempdir),
-					new AgentResource ("frida-agent-arm64.so", new Bytes.static (emulated_arm64.data), tempdir),
+					new AgentResource ("xda-core-arm.so", new Bytes.static (emulated_arm.data), tempdir),
+					new AgentResource ("xda-core-arm64.so", new Bytes.static (emulated_arm64.data), tempdir),
 				},
 				AgentMode.INSTANCED,
 				tempdir);
@@ -405,7 +405,7 @@ namespace Frida {
 		protected override async Future<IOStream> perform_attach_to (uint pid, HashTable<string, Variant> options,
 				Cancellable? cancellable, out Object? transport) throws Error, IOError {
 			uint id;
-			string entrypoint = "frida_agent_main";
+			string entrypoint = "xda_core_main";
 			string parameters = make_agent_parameters (pid, "", options);
 			AgentFeatures features = CONTROL_CHANNEL;
 			var linjector = (Linjector) injector;
@@ -430,10 +430,10 @@ namespace Frida {
 			unowned string name;
 			switch (cpu_type_from_pid (pid)) {
 				case Gum.CpuType.IA32:
-					name = "frida-agent-arm.so";
+					name = "xda-core-arm.so";
 					break;
 				case Gum.CpuType.AMD64:
-					name = "frida-agent-arm64.so";
+					name = "xda-core-arm64.so";
 					break;
 				default:
 					throw new Error.NOT_SUPPORTED ("Emulated realm is not supported on this architecture");
@@ -480,7 +480,7 @@ namespace Frida {
 
 			try {
 				string instance_id = Uuid.string_random ().replace ("-", "");
-				string helper_path = "/data/local/tmp/frida-helper-" + instance_id + ".dex";
+				string helper_path = "/data/local/tmp/xda-helper-" + instance_id + ".dex";
 				FileUtils.set_data (helper_path, Frida.Data.Android.get_helper_dex_blob ().data);
 				Posix.chmod (helper_path, 0644);
 
@@ -557,7 +557,7 @@ namespace Frida {
 
 		construct {
 			main_loop = new MainLoop (main_context, false);
-			worker_thread = new Thread<void> ("frida-android-helper", run);
+			worker_thread = new Thread<void> ("xda-android-helper", run);
 		}
 
 		public async void close (Cancellable? cancellable) throws IOError {
@@ -740,7 +740,7 @@ namespace Frida {
 
 			(*env)->push_local_frame (env, 5);
 			try {
-				var backend_class = (*env)->find_class (env, "re/frida/HelperBackend");
+				var backend_class = (*env)->find_class (env, "re/xda/HelperBackend");
 				assert (backend_class != null);
 
 				var ctor = (*env)->get_method_id (env, backend_class, "<init>", "()V");
@@ -1567,7 +1567,7 @@ namespace Frida {
 			ensure_request = new Promise<bool> ();
 
 			if (server_name == null) {
-				string name = "/frida-zymbiote-" + Uuid.string_random ().replace ("-", "");
+				string name = "/xda00-zymbiote-" + Uuid.string_random ().replace ("-", "");
 				var address = new UnixSocketAddress.with_type (name, -1, UnixSocketAddressType.ABSTRACT);
 
 				try {
@@ -1991,9 +1991,9 @@ namespace Frida {
 			uint64 setargv0 = 0;
 			uint64 setcontext = 0;
 			zymbiote.enumerate_exports (e => {
-				if (e.name == "frida_zymbiote_replacement_setargv0")
+				if (e.name == "xda00_zymbiote_replacement_setargv0")
 					setargv0 = payload_base + (e.address - text.vm_address);
-				else if (e.name == "frida_zymbiote_replacement_setcontext")
+				else if (e.name == "xda00_zymbiote_replacement_setcontext")
 					setcontext = payload_base + (e.address - text.vm_address);
 				return true;
 			});
@@ -2004,7 +2004,7 @@ namespace Frida {
 
 			unowned uint8[] payload_template = blob.data[text.file_offset:text.file_offset + text.file_size];
 
-			void * p = memmem (payload_template, "/frida-zymbiote-00000000000000000000000000000000".data);
+			void * p = memmem (payload_template, "/xda00-zymbiote-00000000000000000000000000000000".data);
 			assert (p != null);
 			size_t data_offset = (uint8 *) p - (uint8 *) payload_template;
 

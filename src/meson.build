@@ -64,7 +64,7 @@ if host_os == 'android' or have_droidy_backend
 endif
 
 if have_local_backend
-  post_process_helper = post_process + ['executable', 're.frida.Helper']
+  post_process_helper = post_process + ['executable', 're.xda.Helper']
 
   embed_helper = [
     python,
@@ -93,23 +93,23 @@ if have_local_backend
       'windows' / 'windows-host-session-glue.c',
       'windows' / 'winjector.vala',
       'windows' / 'winjector-glue.c',
-      'windows' / 'frida-helper-process.vala',
-      'windows' / 'frida-helper-process-glue.c',
+      'windows' / 'xda-helper-process.vala',
+      'windows' / 'xda-helper-process-glue.c',
       'windows' / 'access-helpers.c',
     ]
     backend_vala_args += '--pkg=frida-gum-windows-1.0'
 
     helper_backend_sources = [
-      'windows' / 'frida-helper-backend.vala',
-      'windows' / 'frida-helper-backend-glue.c',
-      'windows' / 'frida-helper-types.vala',
+      'windows' / 'xda-helper-backend.vala',
+      'windows' / 'xda-helper-backend-glue.c',
+      'windows' / 'xda-helper-types.vala',
       'windows' / 'wait-handle-source.c',
     ]
     helper_backend_vala_args = [
       base_vala_args,
       '--pkg=frida-gum-windows-1.0',
     ]
-    helper_backend = static_library('frida-helper-backend', helper_backend_sources,
+    helper_backend = static_library('xda-helper-backend', helper_backend_sources,
       vala_args: helper_backend_vala_args,
       c_args: frida_component_cflags,
       dependencies: [gio_dep, gee_dep, gum_dep, base_dep],
@@ -117,16 +117,16 @@ if have_local_backend
     backend_libs += helper_backend
 
     helper_sources = [
-      'windows' / 'frida-helper-service.vala',
-      'windows' / 'frida-helper-service-glue.c',
+      'windows' / 'xda-helper-service.vala',
+      'windows' / 'xda-helper-service-glue.c',
     ]
-    raw_helper = executable('frida-helper-raw', helper_sources,
+    raw_helper = executable('xda-helper-raw', helper_sources,
       vala_args: helper_backend_vala_args,
       link_with: helper_backend,
       dependencies: [gio_dep, gee_dep, gum_dep, base_dep, pipe_dep],
     )
 
-    helper = custom_target('frida-helper',
+    helper = custom_target('xda-helper',
       input: raw_helper,
       output: helper_name,
       command: post_process_helper,
@@ -184,7 +184,7 @@ if have_local_backend
       'darwin' / 'darwin-host-session.vala',
       'darwin' / 'darwin-host-session-glue.m',
       'darwin' / 'fruitjector.vala',
-      'darwin' / 'frida-helper-process.vala',
+      'darwin' / 'xda-helper-process.vala',
     ]
 
     darwin_data = custom_target('frida-data-darwin',
@@ -214,20 +214,20 @@ if have_local_backend
     backend_sources += [darwin_data]
 
     helper_backend_sources = [
-      'darwin' / 'frida-helper-types.vala',
+      'darwin' / 'xda-helper-types.vala',
       'darwin' / 'policy-softener.vala',
       'darwin' / 'policy-softener-glue.c',
     ]
     if host_os in ['macos', 'ios', 'tvos', 'xros']
       helper_backend_sources += [
-        'darwin' / 'frida-helper-backend.vala',
-        'darwin' / 'frida-helper-backend-glue.m',
+        'darwin' / 'xda-helper-backend.vala',
+        'darwin' / 'xda-helper-backend-glue.m',
         'darwin' / 'policyd.c',
         'darwin' / 'policyd-client.c',
       ]
     else
       helper_backend_sources += [
-        'darwin' / 'frida-helper-null-backend.vala',
+        'darwin' / 'xda-helper-null-backend.vala',
       ]
     endif
     if host_os in ['ios', 'tvos', 'xros']
@@ -238,7 +238,7 @@ if have_local_backend
       ]
     endif
     helper_backend_vala_args = base_vala_args
-    helper_backend = static_library('frida-helper-backend', helper_backend_sources,
+    helper_backend = static_library('xda-helper-backend', helper_backend_sources,
       c_args: frida_component_cflags,
       vala_args: [
         helper_backend_vala_args,
@@ -253,18 +253,18 @@ if have_local_backend
     backend_libs += [helper_backend]
 
     helper_sources = [
-      'darwin' / 'frida-helper-service.vala',
-      'darwin' / 'frida-helper-service-glue.m',
+      'darwin' / 'xda-helper-service.vala',
+      'darwin' / 'xda-helper-service-glue.m',
     ]
-    helper_symlist = 'darwin' / 'frida-helper.symbols'
+    helper_symlist = 'darwin' / 'xda-helper.symbols'
     helper_link_args = ['-Wl,-exported_symbols_list,' + meson.current_source_dir() / helper_symlist]
     helper_link_depends = [helper_symlist]
     if host_os == 'macos'
-      helper_plist = 'darwin' / 'frida-helper.plist'
+      helper_plist = 'darwin' / 'xda-helper.plist'
       helper_link_args += ['-Wl,-sectcreate,__TEXT,__info_plist,' + meson.current_source_dir() / helper_plist]
       helper_link_depends += [helper_plist]
     endif
-    raw_helper = executable('frida-helper-raw', helper_sources,
+    raw_helper = executable('xda-helper-raw', helper_sources,
       vala_args: [helper_backend_vala_args, '--pkg=posix'],
       link_args: [helper_link_args, backend_libs_private],
       link_depends: helper_link_depends,
@@ -275,10 +275,10 @@ if have_local_backend
 
     need_universal_helper = assets_mode == 'installed' and helper_compat != ''
 
-    helper = custom_target('frida-helper',
+    helper = custom_target('xda-helper',
       input: [
         raw_helper,
-        'darwin' / 'frida-helper.xcent',
+        'darwin' / 'xda-helper.xcent',
       ],
       output: need_universal_helper ? f'@helper_name@-@host_abi@' : helper_name,
       command: post_process_helper + '@INPUT1@',
@@ -288,7 +288,7 @@ if have_local_backend
     )
 
     if need_universal_helper
-      custom_target('frida-helper-universal',
+      custom_target('xda-helper-universal',
         input: helper,
         output: helper_name,
         command: [
@@ -333,7 +333,7 @@ if have_local_backend
       'linux' / 'linux-host-session.vala',
       'linux' / 'linjector.vala',
       'linux' / 'linjector-glue.c',
-      'linux' / 'frida-helper-process.vala',
+      'linux' / 'xda-helper-process.vala',
       'linux' / 'supersu.vala',
     ]
 
@@ -349,10 +349,10 @@ if have_local_backend
     endif
 
     helper_backend_sources = [
-      'linux' / 'frida-helper-backend.vala',
-      'linux' / 'frida-helper-backend-glue.c',
-      'linux' / 'frida-helper-backend-types.c',
-      'linux' / 'frida-helper-types.vala',
+      'linux' / 'xda-helper-backend.vala',
+      'linux' / 'xda-helper-backend-glue.c',
+      'linux' / 'xda-helper-backend-types.c',
+      'linux' / 'xda-helper-types.vala',
       'linux' / 'spawn-gater.vala',
       'linux' / 'activity-sampler.vala',
       'linux' / 'syscall-tracer.vala',
@@ -384,7 +384,7 @@ if have_local_backend
     helpers_bpf_arch_dir = helpers_artifacts_dir / 'bpf' / bpf_arch
     helper_backend_data = custom_target('frida-data-helper-backend',
       input: [
-        'linux' / 'frida-helper-backend.resources',
+        'linux' / 'xda-helper-backend.resources',
         helpers_native_dir / 'bootstrapper.bin',
         helpers_native_dir / 'loader.bin',
         helpers_bpf_noarch_dir  / 'activity-sampler.elf',
@@ -418,7 +418,7 @@ if have_local_backend
       gum_vala_args,
       '--pkg=posix',
     ]
-    helper_backend = static_library('frida-helper-backend', helper_backend_sources,
+    helper_backend = static_library('xda-helper-backend', helper_backend_sources,
       c_args: frida_component_cflags,
       vala_args: [
         helper_backend_vala_args,
@@ -432,12 +432,12 @@ if have_local_backend
     backend_libs += [helper_backend]
 
     helper_sources = [
-      'linux' / 'frida-helper-service.vala',
+      'linux' / 'xda-helper-service.vala',
     ]
-    helper_symscript = 'linux' / 'frida-helper.version'
+    helper_symscript = 'linux' / 'xda-helper.version'
     helper_link_args = ['-Wl,--version-script,' + meson.current_source_dir() / helper_symscript]
     helper_link_depends = [helper_symscript]
-    raw_helper = executable('frida-helper-raw', helper_sources,
+    raw_helper = executable('xda-helper-raw', helper_sources,
       vala_args: helper_backend_vala_args,
       link_args: helper_link_args,
       link_depends: helper_link_depends,
@@ -445,7 +445,7 @@ if have_local_backend
       dependencies: [gio_dep, gio_unix_dep, gee_dep, gum_dep, base_dep],
     )
 
-    helper = custom_target('frida-helper',
+    helper = custom_target('xda-helper',
       input: raw_helper,
       output: helper_name,
       command: post_process_helper,

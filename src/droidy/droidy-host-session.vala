@@ -266,7 +266,7 @@ namespace Frida {
 		private Cancellable io_cancellable = new Cancellable ();
 
 		private const double MIN_SERVER_CHECK_INTERVAL = 5.0;
-		private const string GADGET_APP_ID = "re.frida.Gadget";
+		private const string GADGET_APP_ID = "re.xda.Gadget";
 
 		public DroidyHostSession (Droidy.DeviceDetails device_details, HostChannelProvider channel_provider,
 				string control_endpoint) {
@@ -446,7 +446,7 @@ namespace Frida {
 				if (opts.has_selected_identifiers ()) {
 					gadget_is_selected = false;
 					opts.enumerate_selected_identifiers (identifier => {
-						if (identifier == "re.frida.Gadget")
+						if (identifier == "re.xda.Gadget")
 							gadget_is_selected = true;
 					});
 				}
@@ -577,7 +577,7 @@ namespace Frida {
 			if (user_gadget_value != null) {
 				if (!user_gadget_value.is_of_type (VariantType.STRING)) {
 					throw new Error.INVALID_ARGUMENT ("The 'gadget' option must be a string pointing at the " +
-						"frida-gadget.so to use");
+						"xda-gadget.so to use");
 				}
 				user_gadget_path = user_gadget_value.get_string ();
 			}
@@ -884,7 +884,7 @@ namespace Frida {
 				}
 
 				if (connection.closed)
-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
+					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server");
 
 				var server = new RemoteServer (session, connection, flavor, transport_broker);
 				attach_remote_server (server);
@@ -905,11 +905,11 @@ namespace Frida {
 					last_server_check_error = null;
 				} else {
 					if (e is Error.SERVER_NOT_RUNNING) {
-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
+						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server");
 					} else if (connection != null) {
-						api_error = new Error.PROTOCOL ("Incompatible frida-server version");
+						api_error = new Error.PROTOCOL ("Incompatible xda-server version");
 					} else {
-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server: %s",
+						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote xda-server: %s",
 							e.message);
 					}
 
@@ -1030,7 +1030,7 @@ namespace Frida {
 			try {
 				string device_serial = device_details.serial;
 				string instance_id = Uuid.string_random ().replace ("-", "");
-				string helper_path = "/data/local/tmp/frida-helper-" + instance_id + ".dex";
+				string helper_path = "/data/local/tmp/xda-helper-" + instance_id + ".dex";
 
 				var helper_dex = new MemoryInputStream.from_bytes (
 					new Bytes.static (Frida.Data.Android.get_helper_dex_blob ().data));
@@ -1057,8 +1057,8 @@ namespace Frida {
 
 					shell.send_command (("CLASSPATH=%s app_process " +
 							"/data/local/tmp " +
-							"--nice-name=re.frida.helper " +
-							"re.frida.Helper " +
+							"--nice-name=re.xda.helper " +
+							"re.xda.Helper " +
 							"%s; " +
 							"rm -f %s; " +
 							"echo BYE.").printf (helper_path, instance_id, helper_path));
@@ -1078,7 +1078,7 @@ namespace Frida {
 				var client = yield Droidy.Client.open (cancellable);
 				try {
 					yield client.request ("host:transport:" + device_serial, cancellable);
-					yield client.request_protocol_change ("localabstract:/frida-helper-" + instance_id, cancellable);
+					yield client.request_protocol_change ("localabstract:/xda-helper-" + instance_id, cancellable);
 				} catch (GLib.Error e) {
 					client.close.begin ();
 					throw e;

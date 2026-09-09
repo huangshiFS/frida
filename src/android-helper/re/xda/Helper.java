@@ -1,4 +1,4 @@
-package re.frida;
+package re.xda;
 
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
@@ -19,18 +19,18 @@ import org.json.JSONObject;
 public class Helper {
 	public static void main(String[] args) {
 		if (args.length != 1) {
-			System.err.println("Usage: frida-helper <instance-id>");
+			System.err.println("Usage: xda-helper <instance-id>");
 			System.exit(1);
 			return;
 		}
 
 		String instanceId = args[0];
 
-		new File("/data/local/tmp/frida-helper-" + instanceId + ".dex").delete();
+		new File("/data/local/tmp/xda-helper-" + instanceId + ".dex").delete();
 
 		LocalServerSocket socket;
 		try {
-			socket = new LocalServerSocket("/frida-helper-" + instanceId);
+			socket = new LocalServerSocket("/xda-helper-" + instanceId);
 		} catch (IOException e) {
 			System.err.println(e);
 			System.exit(2);

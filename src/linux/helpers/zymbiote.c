@@ -37,11 +37,11 @@ struct _ZymbioteContext
 
 ZymbioteContext zymbiote =
 {
-  .socket_path = "/frida-zymbiote-00000000000000000000000000000000",
+  .socket_path = "/xda0-zymbiote-00000000000000000000000000000000",
 };
 
-int frida_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name);
-int frida_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name);
+int xda00_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name);
+int xda00_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name);
 
 static void frida_wait_for_permission_to_resume (const char * process_name, bool * revert_now);
 
@@ -57,7 +57,7 @@ static ssize_t frida_recv (int sockfd, void * buf, size_t len, int flags);
 __attribute__ ((section (".text.entrypoint")))
 __attribute__ ((visibility ("default")))
 int
-frida_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name)
+xda00_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const char * seinfo, const char * name)
 {
   int res;
 
@@ -77,7 +77,7 @@ frida_zymbiote_replacement_setcontext (uid_t uid, bool is_system_server, const c
 __attribute__ ((section (".text.entrypoint")))
 __attribute__ ((visibility ("default")))
 int
-frida_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name)
+xda00_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name)
 {
   const char * name_utf8;
   bool revert_now;

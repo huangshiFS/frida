@@ -28,7 +28,7 @@ namespace Frida {
 			}
 
 			void * main_func_symbol;
-			var main_func_found = container.module.symbol ("frida_agent_main", out main_func_symbol);
+			var main_func_found = container.module.symbol ("xda_core_main", out main_func_symbol);
 			assert (main_func_found);
 			container.main_impl = (AgentMainFunc) main_func_symbol;
 
@@ -103,7 +103,7 @@ namespace Frida {
 		}
 
 		private void start_worker_thread () {
-			thread = new Thread<bool> ("frida-agent-container", run);
+			thread = new Thread<bool> ("xda-core-container", run);
 		}
 
 		private void stop_worker_thread () {

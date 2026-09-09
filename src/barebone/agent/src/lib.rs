@@ -348,7 +348,7 @@ mod entrypoint_blob {
                 kernel::release_fault_reporter();
             }
 
-            (&raw mut frida_agent_left).write_volatile(1);
+            (&raw mut xda_core_left).write_volatile(1);
 
         }
     }
@@ -534,7 +534,7 @@ mod entrypoint_xnu_kext {
     static WORKER_EXITED: AtomicBool = AtomicBool::new(false);
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frida_agent_start(own_base: u64, own_size: u64) -> c_int {
+    pub extern "C" fn xda_core_start(own_base: u64, own_size: u64) -> c_int {
         kernel::log("frida: agent starting\n\0");
 
         unsafe {
@@ -553,7 +553,7 @@ mod entrypoint_xnu_kext {
     }
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frida_agent_stop() {
+    pub extern "C" fn xda_core_stop() {
         kernel::log("frida: agent stopping\n\0");
 
         STOP_REQUESTED.store(true, Ordering::Release);
@@ -571,7 +571,7 @@ mod entrypoint_xnu_kext {
     }
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frida_agent_wake() {
+    pub extern "C" fn xda_core_wake() {
         let context = LOOP_CONTEXT.load(Ordering::Acquire) as *mut GMainContext;
         if context.is_null() {
             return;
@@ -625,7 +625,7 @@ mod entrypoint_linux {
     /// own kernel thread: `insmod` runs with the module mutex held, and bringing
     /// up Gum plus connecting to the host both block.
     #[unsafe(no_mangle)]
-    pub extern "C" fn frida_agent_start(own_base: u64, own_size: u64) -> c_int {
+    pub extern "C" fn xda_core_start(own_base: u64, own_size: u64) -> c_int {
         kernel::log("frida: agent starting\n\0");
 
         unsafe {
@@ -646,7 +646,7 @@ mod entrypoint_linux {
     /// Called from the module's exit path, which must not return until the worker
     /// is off our text — the module's pages go away right after.
     #[unsafe(no_mangle)]
-    pub extern "C" fn frida_agent_stop() {
+    pub extern "C" fn xda_core_stop() {
         kernel::log("frida: agent stopping\n\0");
 
         STOP_REQUESTED.store(true, Ordering::Release);
@@ -703,9 +703,9 @@ mod entrypoint_linux {
 }
 
 #[cfg(feature = "linux")]
-pub use entrypoint_linux::{frida_agent_start, frida_agent_stop};
+pub use entrypoint_linux::{xda_core_start, xda_core_stop};
 #[cfg(feature = "xnu-kext")]
-pub use entrypoint_xnu_kext::{frida_agent_start, frida_agent_stop, frida_agent_wake};
+pub use entrypoint_xnu_kext::{xda_core_start, xda_core_stop, xda_core_wake};
 #[cfg(feature = "blob")]
 pub use entrypoint_blob::_start;
 
@@ -853,7 +853,7 @@ pub(crate) unsafe fn install_writable_half(seen_by_copy: usize, writable_from_he
             writable_half_size());
 
         #[cfg(feature = "xnu-kext")]
-        let (mut entry, end) = (frida_agent_relocs_start, frida_agent_relocs_end);
+        let (mut entry, end) = (xda_core_relocs_start, xda_core_relocs_end);
         #[cfg(not(feature = "xnu-kext"))]
         let (mut entry, end) = (&raw const _agent_relocs_start as usize,
             &raw const _agent_relocs_end as usize);
@@ -869,8 +869,8 @@ pub(crate) unsafe fn install_writable_half(seen_by_copy: usize, writable_from_he
 #[cfg(feature = "xnu-kext")]
 pub(crate) unsafe fn run_constructors() {
     unsafe {
-        let mut entry = frida_agent_init_start;
-        while entry != frida_agent_init_end {
+        let mut entry = xda_core_init_start;
+        while entry != xda_core_init_end {
             let signed = (entry as *const usize).read() as *const u8;
             let start: extern "C" fn() =
                 core::mem::transmute(crate::pac::ptrauth_strip_data(signed));
@@ -895,7 +895,7 @@ pub(crate) unsafe fn run_constructors() {
 
 #[cfg(feature = "xnu-kext")]
 pub(crate) fn writable_half_start() -> usize {
-    unsafe { frida_agent_private_start }
+    unsafe { xda_core_private_start }
 }
 
 
@@ -907,7 +907,7 @@ pub(crate) fn writable_half_start() -> usize {
 
 #[cfg(feature = "xnu-kext")]
 fn writable_half_size() -> usize {
-    unsafe { frida_agent_heap_start - writable_half_start() }
+    unsafe { xda_core_heap_start - writable_half_start() }
 }
 
 #[cfg(all(any(feature = "win9x", feature = "winnt", feature = "linux-injected",
@@ -943,12 +943,12 @@ unsafe extern "C" {
 
 #[cfg(feature = "xnu-kext")]
 unsafe extern "C" {
-    static frida_agent_init_start: usize;
-    static frida_agent_init_end: usize;
-    static frida_agent_private_start: usize;
-    static frida_agent_heap_start: usize;
-    static frida_agent_relocs_start: usize;
-    static frida_agent_relocs_end: usize;
+    static xda_core_init_start: usize;
+    static xda_core_init_end: usize;
+    static xda_core_private_start: usize;
+    static xda_core_heap_start: usize;
+    static xda_core_relocs_start: usize;
+    static xda_core_relocs_end: usize;
 }
 
 // A copy runs at a base of its own, thus the half that placed it there says where. The
@@ -1075,7 +1075,7 @@ pub(crate) static STOP_REQUESTED: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
 #[unsafe(no_mangle)]
-pub static mut frida_agent_left: u32 = 0;
+pub static mut xda_core_left: u32 = 0;
 
 pub(crate) fn stop_requested() -> bool {
     STOP_REQUESTED.load(Ordering::Acquire)

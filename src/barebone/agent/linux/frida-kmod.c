@@ -647,7 +647,7 @@ frida_kmod_spawn_thread (FridaThreadEntry entry,
   ctx->entry = entry;
   ctx->parameter = parameter;
 
-  task = kthread_run (frida_thread_trampoline, ctx, "frida-agent");
+  task = kthread_run (frida_thread_trampoline, ctx, "xda-core");
   if (IS_ERR (task))
     {
       kfree (ctx);

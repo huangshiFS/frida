@@ -4,7 +4,7 @@ public sealed class Frida.TunnelInterfaceObserver : Object, DynamicInterfaceObse
 
 	private Darwin.SystemConfiguration.DynamicStore? store;
 	private Darwin.GCD.DispatchQueue event_queue =
-		new Darwin.GCD.DispatchQueue ("re.frida.endpoint-enumerator", Darwin.GCD.DispatchQueueAttr.SERIAL);
+		new Darwin.GCD.DispatchQueue ("re.xda.endpoint-enumerator", Darwin.GCD.DispatchQueueAttr.SERIAL);
 
 	private MainContext? main_context;
 

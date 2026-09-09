@@ -200,7 +200,7 @@ frida_temporary_directory_get_system_tmp (void)
 
   /*
    * If the temporary directory resides on a file-system which is marked
-   * `noexec`, then we won't be able to write the frida-agent.so there and
+   * `noexec`, then we won't be able to write the xda-core.so there and
    * subsequently dlopen() it inside the target application as it will result in
    * permission denied.
    *

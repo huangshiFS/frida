@@ -23,7 +23,7 @@ namespace Frida {
 			injector = new Qinjector ();
 			injector.uninjected.connect (on_uninjected);
 
-			var blob = Frida.Data.Agent.get_frida_agent_so_blob ();
+			var blob = Frida.Data.Agent.get_xda_core_so_blob ();
 			agent_desc = new AgentDescriptor (blob.name, new MemoryInputStream.from_data (blob.data, null));
 		}
 
@@ -118,7 +118,7 @@ namespace Frida {
 
 			var stream_request = Pipe.open (t.local_address, cancellable);
 
-			var id = yield qinjector.inject_library_resource (pid, agent_desc, "frida_agent_main",
+			var id = yield qinjector.inject_library_resource (pid, agent_desc, "xda_core_main",
 				make_agent_parameters (pid, t.remote_address, options), cancellable);
 			injectee_by_pid[pid] = id;
 

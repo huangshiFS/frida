@@ -29,7 +29,7 @@ Then the kext itself:
          GUMJS_DEVKIT_DIR=.../frida-gum/build/bindings/gumjs/devkit
 
 which builds the agent as a static library for the kernel's ABI, `frida-kext.c` against the Kernel
-framework's headers, and links the two with the devkit into `frida-agent.kext`.
+framework's headers, and links the two with the devkit into `xda-core.kext`.
 
 `make skeleton` builds the glue alone, which is enough to check the pipeline without the rest.
 

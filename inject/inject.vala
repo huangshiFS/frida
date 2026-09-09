@@ -522,7 +522,7 @@ namespace Frida.Inject {
 				} else {
 					source = script_source;
 
-					options.name = "frida";
+					options.name = "xdagent";
 				}
 
 				options.runtime = script_runtime;

@@ -710,7 +710,7 @@ namespace Frida {
 
 	/**
 	 * Represents a device that Frida can interact with, such as the local
-	 * system, a USB-connected phone, or a remote frida-server.
+	 * system, a USB-connected phone, or a remote xda-server.
 	 *
 	 * Obtain one through a {@link DeviceManager}, then use it to spawn or attach
 	 * to processes.

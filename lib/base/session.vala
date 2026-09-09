@@ -1,5 +1,5 @@
 namespace Frida {
-	[DBus (name = "re.frida.HostSession17")]
+	[DBus (name = "re.xda.HostSession17")]
 	public interface HostSession : Object {
 		public abstract async void ping (uint interval_seconds, Cancellable? cancellable) throws GLib.Error;
 
@@ -46,7 +46,7 @@ namespace Frida {
 		public signal void uninjected (InjectorPayloadId id);
 	}
 
-	[DBus (name = "re.frida.AgentSessionProvider17")]
+	[DBus (name = "re.xda.AgentSessionProvider17")]
 	public interface AgentSessionProvider : Object {
 		public abstract async void open (AgentSessionId id, HashTable<string, Variant> options,
 			Cancellable? cancellable) throws GLib.Error;
@@ -61,7 +61,7 @@ namespace Frida {
 		public signal void child_gating_changed (uint subscriber_count);
 	}
 
-	[DBus (name = "re.frida.AgentSession17")]
+	[DBus (name = "re.xda.AgentSession17")]
 	public interface AgentSession : Object {
 		public abstract async void close (Cancellable? cancellable) throws GLib.Error;
 
@@ -105,7 +105,7 @@ namespace Frida {
 		public signal void candidate_gathering_done ();
 	}
 
-	[DBus (name = "re.frida.AgentController17")]
+	[DBus (name = "re.xda.AgentController17")]
 	public interface AgentController : Object {
 #if !WINDOWS
 		public abstract async HostChildId prepare_to_fork (uint parent_pid, Cancellable? cancellable, out uint parent_injectee_id,
@@ -126,7 +126,7 @@ namespace Frida {
 			Cancellable? cancellable) throws GLib.Error;
 	}
 
-	[DBus (name = "re.frida.AgentMessageSink17")]
+	[DBus (name = "re.xda.AgentMessageSink17")]
 	public interface AgentMessageSink : Object {
 		public abstract async void post_messages (AgentMessage[] messages, uint batch_id,
 			Cancellable? cancellable) throws GLib.Error;
@@ -754,7 +754,7 @@ namespace Frida {
 		}
 	}
 
-	[DBus (name = "re.frida.GadgetSession17")]
+	[DBus (name = "re.xda.GadgetSession17")]
 	public interface GadgetSession : Object {
 		public abstract async void break_and_resume (Cancellable? cancellable) throws GLib.Error;
 		public abstract async void break_and_detach (Cancellable? cancellable) throws GLib.Error;
@@ -782,14 +782,14 @@ namespace Frida {
 		PAGE_PLAN,
 	}
 
-	[DBus (name = "re.frida.Channel17")]
+	[DBus (name = "re.xda.Channel17")]
 	public interface Channel : Object {
 		public abstract async void close (Cancellable? cancellable) throws GLib.Error;
 		public abstract async void input (uint8[] data, Cancellable? cancellable) throws GLib.Error;
 		public signal void output (uint8[] data);
 	}
 
-	[DBus (name = "re.frida.ServiceSession17")]
+	[DBus (name = "re.xda.ServiceSession17")]
 	public interface ServiceSession : Object {
 		public signal void close ();
 		public signal void message (Variant message);
@@ -799,13 +799,13 @@ namespace Frida {
 		public abstract async Variant request (Variant parameters, Cancellable? cancellable) throws GLib.Error;
 	}
 
-	[DBus (name = "re.frida.TransportBroker17")]
+	[DBus (name = "re.xda.TransportBroker17")]
 	public interface TransportBroker : Object {
 		public abstract async void open_tcp_transport (AgentSessionId id, Cancellable? cancellable, out uint16 port,
 			out string token) throws GLib.Error;
 	}
 
-	[DBus (name = "re.frida.PortalSession17")]
+	[DBus (name = "re.xda.PortalSession17")]
 	public interface PortalSession : Object {
 		public abstract async void join (HostApplicationInfo app, SpawnStartState current_state,
 			AgentSessionId[] interrupted_sessions, HashTable<string, Variant> options, Cancellable? cancellable,
@@ -814,14 +814,14 @@ namespace Frida {
 		public signal void kill ();
 	}
 
-	[DBus (name = "re.frida.BusSession17")]
+	[DBus (name = "re.xda.BusSession17")]
 	public interface BusSession : Object {
 		public abstract async void attach (Cancellable? cancellable) throws GLib.Error;
 		public abstract async void post (string json, bool has_data, uint8[] data, Cancellable? cancellable) throws GLib.Error;
 		public signal void message (string json, bool has_data, uint8[] data);
 	}
 
-	[DBus (name = "re.frida.AuthenticationService17")]
+	[DBus (name = "re.xda.AuthenticationService17")]
 	/**
 	 * Authenticates clients connecting to a {@link PortalService} or
 	 * {@link ControlService}.
@@ -1209,13 +1209,13 @@ namespace Frida {
 		}
 	}
 
-	[DBus (name = "re.frida.Error")]
+	[DBus (name = "re.xda.Error")]
 	/**
 	 * The errors that Frida operations can fail with.
 	 */
 	public errordomain Error {
 		/**
-		 * The frida-server is not running.
+		 * The xda-server is not running.
 		 */
 		SERVER_NOT_RUNNING,
 		/**
@@ -1290,7 +1290,7 @@ namespace Frida {
 			throw (IOError) e;
 
 		if (e is DBusError.UNKNOWN_METHOD) {
-			throw new Frida.Error.PROTOCOL ("Unable to communicate with remote frida-server; " +
+			throw new Frida.Error.PROTOCOL ("Unable to communicate with remote xda-server; " +
 				"please ensure that major versions match and that the remote Frida has the " +
 				"feature you are trying to use");
 		}
@@ -2731,18 +2731,18 @@ namespace Frida {
 	}
 
 	namespace ObjectPath {
-		public const string HOST_SESSION = "/re/frida/HostSession";
-		public const string AGENT_SESSION_PROVIDER = "/re/frida/AgentSessionProvider";
-		public const string AGENT_SESSION = "/re/frida/AgentSession";
-		public const string AGENT_CONTROLLER = "/re/frida/AgentController";
-		public const string AGENT_MESSAGE_SINK = "/re/frida/AgentMessageSink";
-		public const string GADGET_SESSION = "/re/frida/GadgetSession";
-		public const string CHANNEL = "/re/frida/Channel";
-		public const string SERVICE = "/re/frida/Service";
-		public const string TRANSPORT_BROKER = "/re/frida/TransportBroker";
-		public const string PORTAL_SESSION = "/re/frida/PortalSession";
-		public const string BUS_SESSION = "/re/frida/BusSession";
-		public const string AUTHENTICATION_SERVICE = "/re/frida/AuthenticationService";
+		public const string HOST_SESSION = "/re/xda/HostSession";
+		public const string AGENT_SESSION_PROVIDER = "/re/xda/AgentSessionProvider";
+		public const string AGENT_SESSION = "/re/xda/AgentSession";
+		public const string AGENT_CONTROLLER = "/re/xda/AgentController";
+		public const string AGENT_MESSAGE_SINK = "/re/xda/AgentMessageSink";
+		public const string GADGET_SESSION = "/re/xda/GadgetSession";
+		public const string CHANNEL = "/re/xda/Channel";
+		public const string SERVICE = "/re/xda/Service";
+		public const string TRANSPORT_BROKER = "/re/xda/TransportBroker";
+		public const string PORTAL_SESSION = "/re/xda/PortalSession";
+		public const string BUS_SESSION = "/re/xda/BusSession";
+		public const string AUTHENTICATION_SERVICE = "/re/xda/AuthenticationService";
 
 		public static string for_agent_session (AgentSessionId id) {
 			return AGENT_SESSION + "/" + id.handle;

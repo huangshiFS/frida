@@ -213,7 +213,7 @@ frida_kext_stop (kmod_info_t * ki, void * d)
   return KERN_SUCCESS;
 }
 
-KMOD_EXPLICIT_DECL (re.frida.agent, "1.0", frida_kext_start, frida_kext_stop)
+KMOD_EXPLICIT_DECL (re.xda.agent, "1.0", frida_kext_start, frida_kext_stop)
 
 static int
 frida_dev_open (dev_t dev, int flags, int devtype, struct proc * p)

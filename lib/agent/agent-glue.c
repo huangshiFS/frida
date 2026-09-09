@@ -1,4 +1,4 @@
-#include "frida-agent.h"
+#include "xda-core.h"
 
 #include "frida-base.h"
 #include "frida-payload.h"
