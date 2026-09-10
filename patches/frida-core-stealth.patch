@@ -38,7 +38,7 @@ index 713c731c..e16bdf0f 100644
    install_dir: get_option('bindir'),
  )
 diff --git a/lib/agent/agent-glue.c b/lib/agent/agent-glue.c
-index d354fe09..9245d6bf 100644
+index d354fe09..8e13e500 100644
 --- a/lib/agent/agent-glue.c
 +++ b/lib/agent/agent-glue.c
 @@ -1,4 +1,4 @@
@@ -47,6 +47,15 @@ index d354fe09..9245d6bf 100644
  
  #include "frida-base.h"
  #include "frida-payload.h"
+@@ -78,7 +78,7 @@ JNI_OnLoad (JavaVM * vm, void * reserved)
+ {
+   FridaAgentBridgeState * state = reserved;
+ 
+-  frida_agent_main (state->agent_parameters, &state->unload_policy, state->injector_state);
++  xda_core_main (state->agent_parameters, &state->unload_policy, state->injector_state);
+ 
+   return JNI_VERSION_1_6;
+ }
 diff --git a/lib/agent/agent.vala b/lib/agent/agent.vala
 index f99f31f5..d8855d21 100644
 --- a/lib/agent/agent.vala
