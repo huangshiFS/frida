@@ -131,7 +131,7 @@ namespace Frida {
 	}
 
 	namespace ObjectPath {
-		public const string HELPER = "/re/xda/Helper";
-		public const string SYSTEM_SESSION_PROVIDER = "/re/xda/SystemSessionProvider";
+		public const string HELPER = "/re/frida/Helper";
+		public const string SYSTEM_SESSION_PROVIDER = "/re/frida/SystemSessionProvider";
 	}
 }
