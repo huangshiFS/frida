@@ -805,22 +805,22 @@ OVERRIDDEN_COMPAT_OPTIONS = {
     "agent_emulated_legacy",
 }
 
-HELPER_TARGET = "frida-helper"
-HELPER_FILE_WINDOWS = Path("src") / "frida-helper.exe"
-HELPER_FILE_UNIX = Path("src") / "frida-helper"
+HELPER_TARGET = "xda-helper"
+HELPER_FILE_WINDOWS = Path("src") / "xda-helper.exe"
+HELPER_FILE_UNIX = Path("src") / "xda-helper"
 
-AGENT_TARGET = "frida-agent"
-AGENT_FILE_WINDOWS = Path("lib") / "agent" / "frida-agent.dll"
-AGENT_FILE_DARWIN = Path("lib") / "agent" / "frida-agent.dylib"
-AGENT_FILE_ELF = Path("lib") / "agent" / "frida-agent.so"
+AGENT_TARGET = "xda-core"
+AGENT_FILE_WINDOWS = Path("lib") / "agent" / "xda-core.dll"
+AGENT_FILE_DARWIN = Path("lib") / "agent" / "xda-core.dylib"
+AGENT_FILE_ELF = Path("lib") / "agent" / "xda-core.so"
 
-GADGET_TARGET = "frida-gadget"
-GADGET_FILE_WINDOWS = Path("lib") / "gadget" / "frida-gadget.dll"
-GADGET_FILE_DARWIN = Path("lib") / "gadget" / "frida-gadget.dylib"
-GADGET_FILE_ELF = Path("lib") / "gadget" / "frida-gadget.so"
+GADGET_TARGET = "xda-gadget"
+GADGET_FILE_WINDOWS = Path("lib") / "gadget" / "xda-gadget.dll"
+GADGET_FILE_DARWIN = Path("lib") / "gadget" / "xda-gadget.dylib"
+GADGET_FILE_ELF = Path("lib") / "gadget" / "xda-gadget.so"
 
-SERVER_TARGET = "frida-server"
-SERVER_FILE_UNIX = Path("server") / "frida-server"
+SERVER_TARGET = "xda-server"
+SERVER_FILE_UNIX = Path("server") / "xda-server"
 
 MSVS_ENVVARS = {
     "PLATFORM",
