@@ -48,7 +48,7 @@ namespace Frida {
 		public abstract async MappedLibraryBlob? try_mmap (Bytes blob, Cancellable? cancellable) throws Error, IOError;
 	}
 
-	[DBus (name = "re.xda.Helper")]
+	[DBus (name = "re.frida.Helper")]
 	public interface DarwinRemoteHelper : Object {
 		public signal void output (uint pid, int fd, uint8[] data);
 		public signal void gating_cancelled ();

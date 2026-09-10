@@ -43,7 +43,7 @@ namespace Frida {
 		CONTROL_CHANNEL,
 	}
 
-	[DBus (name = "re.xda.Helper")]
+	[DBus (name = "re.frida.Helper")]
 	public interface LinuxRemoteHelper : Object {
 		public signal void output (uint pid, int fd, uint8[] data);
 		public signal void uninjected (uint id);
